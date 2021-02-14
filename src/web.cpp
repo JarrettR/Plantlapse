@@ -3,32 +3,32 @@
 
 
 
-StaticJsonDocument<1000> jsonDocument;
-WebServer server(80);
 
-
-void web_init(){
-
-  ////////////////Server
-  server.onNotFound(handleRoot); //Calls the function handleRoot regardless of the server uri ex.(192.168.100.110/edit server uri is "/edit")
+Web::Web(): server(80) {
+  //Calls the function handleRoot regardless of the server uri ex.(192.168.100.110/edit server uri is "/edit")
+  server.onNotFound([&]() { Web::handleRoot(); });
   server.begin();//starts the server
   Serial.println("HTTP server started");
   restServerRouting();
   // Set not found response
   // server.onNotFound(handleNotFound);
-};
+}
 
-void setCrossOrigin(){
+void Web::handleClient() {
+  server.handleClient();
+}
+
+void Web::setCrossOrigin(){
   server.sendHeader(F("Access-Control-Allow-Origin"), F("*"));
   server.sendHeader(F("Access-Control-Max-Age"), F("600"));
   server.sendHeader(F("Access-Control-Allow-Methods"), F("PUT,POST,GET,OPTIONS"));
   server.sendHeader(F("Access-Control-Allow-Headers"), F("*"));
 };
 
-void getHelloWord() {
+void Web::getHelloWord() {
   server.send(200, "text/json", "{\"name\": \"Hello world\"}");
 }
-void getStatus() {
+void Web::getStatus() {
   setCrossOrigin();
   jsonDocument.clear();  
 //   switch(status) {
@@ -48,7 +48,7 @@ void getStatus() {
 //   server.send(200, "application/json", buffer);
 }
 
-void getScriptList() {
+void Web::getScriptList() {
   setCrossOrigin();
   jsonDocument.clear();
 
@@ -72,19 +72,19 @@ void getScriptList() {
 
 
 // Define routing
-void restServerRouting() {
-    server.on("/test", HTTP_GET, []() {
-        server.send(200, F("text/html"),
+void Web::restServerRouting() {
+    server.on("/test", HTTP_GET, [&]() {
+        Web::server.send(200, F("text/html"),
             F("Success!"));
     });
-    server.on(F("/helloWorld"), HTTP_GET, getHelloWord);
-    server.on(F("/getstatus"), HTTP_GET, getStatus);
-    server.on(F("/getscriptlist"), HTTP_GET, getScriptList);
+    server.on(F("/helloWorld"), HTTP_GET, [&]() { Web::getHelloWord(); });
+    server.on(F("/getstatus"), HTTP_GET, [&]() { Web::getStatus(); });
+    server.on(F("/getscriptlist"), HTTP_GET, [&]() { Web::getScriptList(); });
     // server.on(F("/senddmx"), HTTP_POST, sendDMX);	
 }
 
 //This functions returns a String of content type
-String getContentType(String filename) {
+String Web::getContentType(String filename) {
   if (server.hasArg("download")) { // check if the parameter "download" exists
     return "application/octet-stream";
   } else if (filename.endsWith(".htm")) { //check if the string filename ends with ".htm"
@@ -115,7 +115,7 @@ String getContentType(String filename) {
   return "text/plain";
 }
 
-void handleRoot() {
+void Web::handleRoot() {
 
   /* SD_MMC pertains to the sd card "memory". It is save as a
     variable at the same address given to fs in the fs library

@@ -14,7 +14,10 @@
 
 WiFiUDP wifiUdp;
 NTP ntp(wifiUdp);
+Web web;
 
+time_t epochDiff;
+void updateEpoch(void * unused);
 
 void setup() {
 
@@ -43,20 +46,21 @@ void setup() {
   ntp.begin();
   
 
-  // xTaskCreate(
-  //   parseScript, // Task function
-  //   "parseScript",           // String with name of task
-  //   10000,              // Stack size in bytes
-  //   NULL,               // Parameter passed as input of the task
-  //   tskIDLE_PRIORITY+1, // Priority of the task
-  //   NULL);    
+  xTaskCreate(
+    updateEpoch, // Task function
+    "updateEpoch",           // String with name of task
+    1000,              // Stack size in bytes
+    NULL,               // Parameter passed as input of the task
+    tskIDLE_PRIORITY+1, // Priority of the task
+    NULL);    
 }
 
 
 void loop() {
-  // server.handleClient();
+  web.handleClient();
   
   ntp.update();
+  Serial.println(ntp.epoch());
   Serial.println(ntp.formattedTime("%d. %B %Y"));
 
   Serial.println(ntp.formattedTime("%A %T"));
@@ -64,4 +68,11 @@ void loop() {
   Serial.print('.');
   vTaskDelay(120);
   
+}
+
+void updateEpoch(void * unused) {
+  ntp.update();
+  epochDiff = ntp.epoch() - (esp_timer_get_time() / 1000000);
+  // 30 minutes
+  vTaskDelay(1800000 / portTICK_PERIOD_MS);
 }
