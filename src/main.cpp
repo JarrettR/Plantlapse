@@ -4,6 +4,7 @@
 
 #include <WiFi.h> 
 #include <WiFiUdp.h>
+#include <ArduinoOTA.h>
 #include <NTP.h>
 
 #include "credentials.h"
@@ -17,6 +18,9 @@ NTP ntp(wifiUdp);
 Web web;
 
 time_t epochDiff;
+time_t nextTime;
+//30 seconds
+const time_t interval = 30000;
 void updateEpoch(void * unused);
 
 void setup() {
@@ -42,8 +46,38 @@ void setup() {
     Serial.println("mDNS responder started");
   }
 
+
+  ArduinoOTA
+    .onStart([]() {
+      String type;
+      if (ArduinoOTA.getCommand() == U_FLASH)
+        type = "sketch";
+      else // U_SPIFFS
+        type = "filesystem";
+
+      // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+      Serial.println("Start updating " + type);
+    })
+    .onEnd([]() {
+      Serial.println("\nEnd");
+    })
+    .onProgress([](unsigned int progress, unsigned int total) {
+      Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+    })
+    .onError([](ota_error_t error) {
+      Serial.printf("Error[%u]: ", error);
+      if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+      else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+      else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+      else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+      else if (error == OTA_END_ERROR) Serial.println("End Failed");
+    });
+
+  ArduinoOTA.begin();
+
   
   ntp.begin();
+  nextTime = 0;
   
 
   xTaskCreate(
@@ -58,8 +92,16 @@ void setup() {
 
 void loop() {
   web.handleClient();
+  ArduinoOTA.handle();
   
-  ntp.update();
+  time_t time = epochDiff + (esp_timer_get_time() / 1000000);
+  if (time >= nextTime) {
+    //Snap
+    if(nextTime == 0) {
+      nextTime = time;
+    }
+    nextTime += interval;
+  }
   Serial.println(ntp.epoch());
   Serial.println(ntp.formattedTime("%d. %B %Y"));
 
