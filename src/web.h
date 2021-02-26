@@ -6,6 +6,8 @@
 #include <ESPmDNS.h>
 #include <ArduinoJson.h>
 
+void web_init();
+void web_handleclient(void);
 
 
 class Web {
@@ -19,7 +21,6 @@ class Web {
         WebServer server;
         StaticJsonDocument<1000> jsonDocument;
         void setCrossOrigin(void);
-        void handleRoot();
         void getStatus();
         void getHelloWord();
         void getScriptList();

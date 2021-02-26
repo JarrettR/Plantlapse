@@ -15,9 +15,9 @@
 
 WiFiUDP wifiUdp;
 NTP ntp(wifiUdp);
-Web web;
+// Web web;
 
-time_t epochDiff;
+volatile time_t epochDiff;
 time_t nextTime;
 //30 seconds
 const time_t interval = 30000;
@@ -42,9 +42,10 @@ void setup() {
   Serial.println("");
   Serial.println("WiFi connected.");
   Serial.println(WiFi.localIP());
-  if (MDNS.begin("plantcam")) {
-    Serial.println("mDNS responder started");
-  }
+  // if (MDNS.begin("plantcam")) {
+  //   Serial.println("mDNS responder started");
+  // }
+  ArduinoOTA.setHostname("plantcam");
 
 
   ArduinoOTA
@@ -78,6 +79,8 @@ void setup() {
   
   ntp.begin();
   nextTime = 0;
+
+  web_init();
   
 
   xTaskCreate(
@@ -91,8 +94,8 @@ void setup() {
 
 
 void loop() {
-  web.handleClient();
   ArduinoOTA.handle();
+  web_handleclient();
   
   time_t time = epochDiff + (esp_timer_get_time() / 1000000);
   if (time >= nextTime) {
@@ -102,12 +105,12 @@ void loop() {
     }
     nextTime += interval;
   }
-  Serial.println(ntp.epoch());
-  Serial.println(ntp.formattedTime("%d. %B %Y"));
+  // Serial.println(ntp.epoch());
+  // Serial.println(ntp.formattedTime("%d. %B %Y"));
 
-  Serial.println(ntp.formattedTime("%A %T"));
+  // Serial.println(ntp.formattedTime("%A %T"));
 
-  Serial.print('.');
+  // Serial.print('.');
   vTaskDelay(120);
   
 }

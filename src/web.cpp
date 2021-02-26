@@ -2,11 +2,16 @@
 #include "web.h"
 
 
+void restServerRouting();
+void handleRoot();
+void getHelloWord();
+String getContentType(String filename);
 
+WebServer server(80);
 
-Web::Web(): server(80) {
+void web_init(void) {
   //Calls the function handleRoot regardless of the server uri ex.(192.168.100.110/edit server uri is "/edit")
-  server.onNotFound([&]() { Web::handleRoot(); });
+  server.onNotFound(handleRoot);
   server.begin();//starts the server
   Serial.println("HTTP server started");
   restServerRouting();
@@ -14,9 +19,21 @@ Web::Web(): server(80) {
   // server.onNotFound(handleNotFound);
 }
 
-void Web::handleClient() {
+void web_handleclient(void) {
   server.handleClient();
 }
+
+// Define routing
+void restServerRouting() {
+    server.on("/test", HTTP_GET, [&]() {
+        server.send(200, F("text/html"),
+            F("Success!"));
+    });
+    server.on(F("/helloWorld"), HTTP_GET, getHelloWord);
+    // server.on(F("/getstatus"), HTTP_GET, getStatus);
+    // server.on(F("/getscriptlist"), HTTP_GET, getScriptList);
+}
+
 
 void Web::setCrossOrigin(){
   server.sendHeader(F("Access-Control-Allow-Origin"), F("*"));
@@ -25,7 +42,7 @@ void Web::setCrossOrigin(){
   server.sendHeader(F("Access-Control-Allow-Headers"), F("*"));
 };
 
-void Web::getHelloWord() {
+void getHelloWord() {
   server.send(200, "text/json", "{\"name\": \"Hello world\"}");
 }
 void Web::getStatus() {
@@ -71,20 +88,8 @@ void Web::getScriptList() {
 }
 
 
-// Define routing
-void Web::restServerRouting() {
-    server.on("/test", HTTP_GET, [&]() {
-        Web::server.send(200, F("text/html"),
-            F("Success!"));
-    });
-    server.on(F("/helloWorld"), HTTP_GET, [&]() { Web::getHelloWord(); });
-    server.on(F("/getstatus"), HTTP_GET, [&]() { Web::getStatus(); });
-    server.on(F("/getscriptlist"), HTTP_GET, [&]() { Web::getScriptList(); });
-    // server.on(F("/senddmx"), HTTP_POST, sendDMX);	
-}
-
 //This functions returns a String of content type
-String Web::getContentType(String filename) {
+String getContentType(String filename) {
   if (server.hasArg("download")) { // check if the parameter "download" exists
     return "application/octet-stream";
   } else if (filename.endsWith(".htm")) { //check if the string filename ends with ".htm"
@@ -115,7 +120,7 @@ String Web::getContentType(String filename) {
   return "text/plain";
 }
 
-void Web::handleRoot() {
+void handleRoot() {
 
   /* SD_MMC pertains to the sd card "memory". It is save as a
     variable at the same address given to fs in the fs library
@@ -137,4 +142,5 @@ void Web::handleRoot() {
 //   File file = fs.open(path, "r"); //Open the File with file name = to path with intention to read it. For other modes see <a href="https://arduino-esp8266.readthedocs.io/en/latest/filesystem.html" style="font-size: 13.5px;"> https://arduino-esp8266.readthedocs.io/en/latest/...</a>
 //   server.streamFile(file, contentType); //sends the file to the server references from <a href="https://github.com/espressif/arduino-esp32/blob/master/libraries/WebServer/src/WebServer.h" style="font-size: 13.5px;"> https://arduino-esp8266.readthedocs.io/en/latest/...</a>
 //   file.close(); //Close the file
+  Serial.println("Root:");
 }
