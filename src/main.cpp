@@ -2,10 +2,13 @@
 #include <Arduino.h>
 
 
-#include <WiFi.h> 
+#include <WiFi.h>
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include <NTP.h>
+#include <FS.h>
+#include <SD.h>
+#include <SPI.h>
 
 #include "credentials.h"
 #include "pins.h"
@@ -27,7 +30,7 @@ void setup() {
 
   Serial.begin(115200);
 
-  Serial.flush();  
+  Serial.flush();
 
 
   //Wifi
@@ -76,12 +79,12 @@ void setup() {
 
   ArduinoOTA.begin();
 
-  
+
   ntp.begin();
   nextTime = 0;
 
   web_init();
-  
+
 
   xTaskCreate(
     updateEpoch, // Task function
@@ -89,14 +92,14 @@ void setup() {
     1000,              // Stack size in bytes
     NULL,               // Parameter passed as input of the task
     tskIDLE_PRIORITY+1, // Priority of the task
-    NULL);    
+    NULL);
 }
 
 
 void loop() {
   ArduinoOTA.handle();
   web_handleclient();
-  
+
   time_t time = epochDiff + (esp_timer_get_time() / 1000000);
   if (time >= nextTime) {
     //Snap
@@ -112,7 +115,7 @@ void loop() {
 
   // Serial.print('.');
   vTaskDelay(120);
-  
+
 }
 
 void updateEpoch(void * unused) {

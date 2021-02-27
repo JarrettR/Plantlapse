@@ -1,10 +1,15 @@
 #pragma once
 
 #include <Arduino.h>
-#include <WiFi.h> 
+#include <WiFi.h>
 #include <WebServer.h>
-#include <ESPmDNS.h>
+#include <esp32cam.h>
 #include <ArduinoJson.h>
+// #include <FS.h>
+// #include <SD.h>
+// #include <SPI.h>
+#include "storage.h"
+#include "settings.h"
 
 void web_init();
 void web_handleclient(void);

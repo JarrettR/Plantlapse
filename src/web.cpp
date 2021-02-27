@@ -4,19 +4,28 @@
 
 void restServerRouting();
 void handleRoot();
+void handleNotFound();
+void setCrossOrigin();
 void getHelloWord();
+void getJpg();
+void getSettings();
 String getContentType(String filename);
+
+StaticJsonDocument<1000> jsonDocument;
+char buffer[1000];
 
 WebServer server(80);
 
+Settings settings;
+
 void web_init(void) {
   //Calls the function handleRoot regardless of the server uri ex.(192.168.100.110/edit server uri is "/edit")
-  server.onNotFound(handleRoot);
+
   server.begin();//starts the server
   Serial.println("HTTP server started");
+    server.onNotFound(handleRoot);
   restServerRouting();
-  // Set not found response
-  // server.onNotFound(handleNotFound);
+  settings.begin();
 }
 
 void web_handleclient(void) {
@@ -30,24 +39,46 @@ void restServerRouting() {
             F("Success!"));
     });
     server.on(F("/helloWorld"), HTTP_GET, getHelloWord);
-    // server.on(F("/getstatus"), HTTP_GET, getStatus);
+    server.on(F("/jpg"), HTTP_GET, getJpg);
+    server.on(F("/getsettings"), HTTP_GET, getSettings);
     // server.on(F("/getscriptlist"), HTTP_GET, getScriptList);
 }
 
 
-void Web::setCrossOrigin(){
+void setCrossOrigin(){
   server.sendHeader(F("Access-Control-Allow-Origin"), F("*"));
   server.sendHeader(F("Access-Control-Max-Age"), F("600"));
   server.sendHeader(F("Access-Control-Allow-Methods"), F("PUT,POST,GET,OPTIONS"));
   server.sendHeader(F("Access-Control-Allow-Headers"), F("*"));
 };
 
+void handleNotFound() {
+  server.send(404, "", "");
+}
+
 void getHelloWord() {
   server.send(200, "text/json", "{\"name\": \"Hello world\"}");
 }
-void Web::getStatus() {
+
+void getJpg() {
+  auto frame = esp32cam::capture();
+  if (frame == nullptr) {
+    Serial.println("CAPTURE FAIL");
+    server.send(503, "", "");
+    return;
+  }
+  Serial.printf("CAPTURE OK %dx%d %db\n", frame->getWidth(), frame->getHeight(),
+                static_cast<int>(frame->size()));
+
+  server.setContentLength(frame->size());
+  server.send(200, "image/jpeg");
+  WiFiClient client = server.client();
+  frame->writeTo(client);
+}
+
+void getSettings() {
   setCrossOrigin();
-  jsonDocument.clear();  
+  jsonDocument.clear();
 //   switch(status) {
 //     case STATUS_RUNNING:
 //       jsonDocument["status"] = "running";
@@ -60,39 +91,21 @@ void Web::getStatus() {
 //   jsonDocument["script_filename"] = script_filename;
 //   jsonDocument["current_channel"] = current_channel;
 //   jsonDocument["current_value"] = current_channel_value;
-//   serializeJson(jsonDocument, buffer);
 
-//   server.send(200, "application/json", buffer);
-}
 
-void Web::getScriptList() {
-  setCrossOrigin();
-  jsonDocument.clear();
+  jsonDocument["gain"] = settings.gain;
+  jsonDocument["contrast"] = settings.contrast;
+  serializeJson(jsonDocument, buffer);
 
-//   File dir = SD.open("/runscripts");
+  server.send(200, "application/json", buffer);
 
-//   while (true) {
-//     File entry =  dir.openNextFile();
-
-//     if (! entry) {
-//       break;
-
-//     }
-//     char filename[76];
-//     strncpy(filename, entry.name(), 76);
-//     jsonDocument.add(filename);
-//   }
-//   serializeJson(jsonDocument, buffer);
-
-//   server.send(200, "application/json", buffer);
 }
 
 
-//This functions returns a String of content type
 String getContentType(String filename) {
-  if (server.hasArg("download")) { // check if the parameter "download" exists
+  if (server.hasArg("download")) {
     return "application/octet-stream";
-  } else if (filename.endsWith(".htm")) { //check if the string filename ends with ".htm"
+  } else if (filename.endsWith(".htm")) {
     return "text/html";
   } else if (filename.endsWith(".html")) {
     return "text/html";
@@ -121,26 +134,20 @@ String getContentType(String filename) {
 }
 
 void handleRoot() {
+  fs::FS &fs = SD;
+  String path = server.uri();
+  Serial.print("path ");  Serial.println(path);
 
-  /* SD_MMC pertains to the sd card "memory". It is save as a
-    variable at the same address given to fs in the fs library
-    with "FS" class to enable the file system wrapper to make
-    changes on the sd cards memory */
-//   fs::FS &fs = SD;
-//   String path = server.uri(); //saves the to a string server uri ex.(192.168.100.110/edit server uri is "/edit")
-//   Serial.print("path ");  Serial.println(path);
+  if (path.endsWith("/")) {
+    path += "index.html";
+  }
 
-//   //To send the index.html when the serves uri is "/"
-//   if (path.endsWith("/")) {
-//     path += "index.html";
-//   }
-
-//   //gets the extension name and its corresponding content type
-//   String contentType = getContentType(path);
-//   Serial.print("contentType ");
-//   Serial.println(contentType);
-//   File file = fs.open(path, "r"); //Open the File with file name = to path with intention to read it. For other modes see <a href="https://arduino-esp8266.readthedocs.io/en/latest/filesystem.html" style="font-size: 13.5px;"> https://arduino-esp8266.readthedocs.io/en/latest/...</a>
-//   server.streamFile(file, contentType); //sends the file to the server references from <a href="https://github.com/espressif/arduino-esp32/blob/master/libraries/WebServer/src/WebServer.h" style="font-size: 13.5px;"> https://arduino-esp8266.readthedocs.io/en/latest/...</a>
-//   file.close(); //Close the file
-  Serial.println("Root:");
+  String contentType = getContentType(path);
+  Serial.print("contentType ");
+  Serial.println(contentType);
+  File file = fs.open(path, "r");
+  server.streamFile(file, contentType);
+  file.close();
+  // Serial.println("Root:");
+  // handleNotFound();
 }
