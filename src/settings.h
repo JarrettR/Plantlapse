@@ -13,6 +13,13 @@ public:
   uint32_t getInterval(void);
 
 
+  uint8_t timelapse_enabled;
+  time_t next_time;
+  //In ms
+  uint32_t interval;
+  uint32_t current_set;
+  uint32_t current_photo;
+
   uint8_t resolution;
   uint8_t format;
   bool autogain;
@@ -35,11 +42,5 @@ public:
   private:
     //Unsaved changes
     uint8_t dirty;
-
-    //In ms
-    uint32_t interval;
-
-    uint32_t current_set;
-    uint32_t current_photo;
 
 };

@@ -9,8 +9,8 @@
 void config_camera(Settings *settings) {
   // esp32cam::Camera.changeResolution(loRes);
   //Format
-  esp32cam::Camera.setAutoGain(1);
-  esp32cam::Camera.setAutoExposure(1);
+  esp32cam::Camera.setAutoGain(settings->autogain);
+  esp32cam::Camera.setAutoExposure(settings->autoexposure);
   esp32cam::Camera.setGain(settings->gain);
   esp32cam::Camera.setExposure(settings->exposure);
   esp32cam::Camera.setVerticalFlip(settings->verticalflip);

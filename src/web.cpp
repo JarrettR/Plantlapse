@@ -95,8 +95,28 @@ void getSettings() {
 //   jsonDocument["current_value"] = current_channel_value;
 
 
+  jsonDocument["timelapse_enabled"] = websettings->timelapse_enabled;
+  jsonDocument["next_time"] = websettings->next_time;
+  jsonDocument["interval"] = websettings->interval;
+  jsonDocument["current_set"] = websettings->current_set;
+  jsonDocument["current_photo"] = websettings->current_photo;
+  jsonDocument["resolution"] = websettings->resolution;
+  jsonDocument["format"] = websettings->format;
+  jsonDocument["autogain"] = websettings->autogain;
+  jsonDocument["autoexposure"] = websettings->autoexposure;
   jsonDocument["gain"] = websettings->gain;
+  jsonDocument["exposure"] = websettings->exposure;
+  jsonDocument["verticalflip"] = websettings->verticalflip;
+  jsonDocument["quality"] = websettings->quality;
+  jsonDocument["gainceiling"] = websettings->gainceiling;
+  jsonDocument["brightness"] = websettings->brightness;
+  jsonDocument["lenscorrection"] = websettings->lenscorrection;
+  jsonDocument["saturation"] = websettings->saturation;
   jsonDocument["contrast"] = websettings->contrast;
+  jsonDocument["sharpness"] = websettings->sharpness;
+  jsonDocument["horizontalflip"] = websettings->horizontalflip;
+  jsonDocument["blackpixelcorrection"] = websettings->blackpixelcorrection;
+  jsonDocument["whitepixelcorrection"] = websettings->whitepixelcorrection;
   serializeJson(jsonDocument, buffer);
 
   server.send(200, "application/json", buffer);
