@@ -16,7 +16,7 @@ public:
   uint8_t timelapse_enabled;
   time_t next_time;
   //In ms
-  uint32_t interval;
+  time_t interval;
   uint32_t current_set;
   uint32_t current_photo;
 

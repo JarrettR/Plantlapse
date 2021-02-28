@@ -26,6 +26,7 @@ time_t nextTime;
 
 //30 seconds
 const time_t interval = 30000;
+void lapse(void * unused);
 void updateEpoch(void * unused);
 
 void setup() {
@@ -83,18 +84,25 @@ void setup() {
 
 
   ntp.begin();
-  nextTime = 0;
 
   web_init(&settings);
 
 
-  xTaskCreate(
-    updateEpoch, // Task function
-    "updateEpoch",           // String with name of task
-    1000,              // Stack size in bytes
-    NULL,               // Parameter passed as input of the task
-    tskIDLE_PRIORITY+1, // Priority of the task
-    NULL);
+    xTaskCreate(
+      lapse, // Task function
+      "lapse",           // String with name of task
+      1000,              // Stack size in bytes
+      NULL,               // Parameter passed as input of the task
+      tskIDLE_PRIORITY+1, // Priority of the task
+      NULL);
+
+    xTaskCreate(
+      updateEpoch, // Task function
+      "updateEpoch",           // String with name of task
+      1000,              // Stack size in bytes
+      NULL,               // Parameter passed as input of the task
+      tskIDLE_PRIORITY+1, // Priority of the task
+      NULL);
 }
 
 
@@ -120,9 +128,26 @@ void loop() {
 
 }
 
+void lapse(void * unused) {
+  while(1) {
+    if(settings.timelapse_enabled) {
+      time_t current_time = esp_timer_get_time() + epochDiff;
+      if (current_time >= settings.next_time) {
+        Serial.println("Click");
+        settings.next_time = current_time + settings.interval;
+      }
+      vTaskDelay(settings.interval / portTICK_PERIOD_MS);
+    } else {
+      vTaskDelay(155 / portTICK_PERIOD_MS);
+    }
+  }
+}
+
 void updateEpoch(void * unused) {
-  ntp.update();
-  epochDiff = ntp.epoch() - (esp_timer_get_time() / 1000000);
-  // 30 minutes
-  vTaskDelay(1800000 / portTICK_PERIOD_MS);
+  while(1) {
+    ntp.update();
+    epochDiff = ntp.epoch() - (esp_timer_get_time() / 1000000);
+    // 30 minutes
+    vTaskDelay(1800000 / portTICK_PERIOD_MS);
+  }
 }

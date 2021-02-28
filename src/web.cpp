@@ -6,6 +6,7 @@ void restServerRouting();
 void handleRoot();
 void handleNotFound();
 void setCrossOrigin();
+void enableTimelapse();
 void getHelloWord();
 void getJpg();
 void getSettings();
@@ -41,6 +42,7 @@ void restServerRouting() {
     server.on(F("/helloWorld"), HTTP_GET, getHelloWord);
     server.on(F("/jpg"), HTTP_GET, getJpg);
     server.on(F("/getsettings"), HTTP_GET, getSettings);
+    server.on(F("/enabletimelapse"), HTTP_GET, enableTimelapse);
     // server.on(F("/getscriptlist"), HTTP_GET, getScriptList);
 }
 
@@ -56,6 +58,10 @@ void handleNotFound() {
   server.send(404, "", "");
 }
 
+void enableTimelapse() {
+  websettings->timelapse_enabled = 1;
+  server.send(200, "text/json", "{\"name\": \"Success\"}");
+}
 void getHelloWord() {
   server.send(200, "text/json", "{\"name\": \"Hello world\"}");
 }
