@@ -8,7 +8,7 @@ Settings::Settings() {
 
   timelapse_enabled = 0;
   next_time = 0;
-  interval = 2000;
+  interval = 4000;
   current_set = 0;
   current_photo = 0;
 

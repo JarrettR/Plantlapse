@@ -5,6 +5,19 @@
 // static auto loRes = esp32cam::Resolution::find(320, 240);
 // static auto hiRes = esp32cam::Resolution::find(800, 600);
 
+void camera_init() {
+
+  static auto hiRes = esp32cam::Resolution::find(800, 600);
+  using namespace esp32cam;
+  Config cfg;
+  cfg.setPins(pins::AiThinker);
+  cfg.setResolution(hiRes);
+  cfg.setBufferCount(2);
+  cfg.setJpeg(80);
+
+  bool ok = Camera.begin(cfg);
+  Serial.println(ok ? "CAMERA OK" : "CAMERA FAIL");
+}
 
 void config_camera(Settings *settings) {
   // esp32cam::Camera.changeResolution(loRes);

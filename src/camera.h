@@ -4,5 +4,5 @@
 #include "pins.h"
 #include "settings.h"
 
-
+void camera_init(void);
 void config_camera(Settings*);

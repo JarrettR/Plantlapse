@@ -13,7 +13,7 @@ public:
   uint32_t getInterval(void);
 
 
-  uint8_t timelapse_enabled;
+  bool timelapse_enabled;
   time_t next_time;
   //In ms
   time_t interval;
@@ -41,6 +41,6 @@ public:
 
   private:
     //Unsaved changes
-    uint8_t dirty;
+    bool dirty;
 
 };

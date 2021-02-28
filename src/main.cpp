@@ -16,10 +16,10 @@
 #include "storage.h"
 #include "web.h"
 
-
 WiFiUDP wifiUdp;
 NTP ntp(wifiUdp);
 Settings settings;
+Storage storage;
 
 volatile time_t epochDiff;
 time_t nextTime;
@@ -86,6 +86,7 @@ void setup() {
   ntp.begin();
 
   web_init(&settings);
+  camera_init();
 
 
     xTaskCreate(
@@ -93,7 +94,7 @@ void setup() {
       "lapse",           // String with name of task
       1000,              // Stack size in bytes
       NULL,               // Parameter passed as input of the task
-      tskIDLE_PRIORITY+1, // Priority of the task
+      tskIDLE_PRIORITY+2, // Priority of the task
       NULL);
 
     xTaskCreate(
@@ -134,6 +135,13 @@ void lapse(void * unused) {
       time_t current_time = esp_timer_get_time() + epochDiff;
       if (current_time >= settings.next_time) {
         Serial.println("Click");
+        config_camera(&settings);
+        auto frame = esp32cam::capture();
+        if (frame == nullptr) {
+          Serial.println("CAPTURE FAIL");
+          break;
+        }
+        storage.writeFile("a.jpg", frame->data(), frame->size());
         settings.next_time = current_time + settings.interval;
       }
       vTaskDelay(settings.interval / portTICK_PERIOD_MS);
