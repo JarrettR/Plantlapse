@@ -1,12 +1,12 @@
 #include "camera.h"
 
 
+//
+// static auto loRes = esp32cam::Resolution::find(320, 240);
+// static auto hiRes = esp32cam::Resolution::find(800, 600);
 
-static auto loRes = esp32cam::Resolution::find(320, 240);
-static auto hiRes = esp32cam::Resolution::find(800, 600);
 
-
-void config_camera(Settings* settings) {
+void config_camera(Settings *settings) {
   // esp32cam::Camera.changeResolution(loRes);
   //Format
   esp32cam::Camera.setAutoGain(1);

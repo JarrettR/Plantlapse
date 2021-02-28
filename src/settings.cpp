@@ -4,16 +4,12 @@
 
 
 Settings::Settings() {
-  //
+  dirty = 1;
+  contrast = 6;
 }
 
 Settings::~Settings() {
   //
-}
-
-void Settings::begin() {
-  dirty = 1;
-  //Pull from NVS
 }
 
 void Settings::setInterval(uint32_t value) {

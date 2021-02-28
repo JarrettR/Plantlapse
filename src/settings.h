@@ -9,8 +9,6 @@ public:
   Settings();
   ~Settings();
 
-  void begin(void);
-
   void setInterval(uint32_t value);
   uint32_t getInterval(void);
 

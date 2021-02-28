@@ -9,9 +9,10 @@
 // #include <SD.h>
 // #include <SPI.h>
 #include "storage.h"
+#include "camera.h"
 #include "settings.h"
 
-void web_init();
+void web_init(Settings *);
 void web_handleclient(void);
 
 

@@ -12,16 +12,18 @@
 
 #include "credentials.h"
 #include "pins.h"
+#include "settings.h"
 #include "storage.h"
 #include "web.h"
 
 
 WiFiUDP wifiUdp;
 NTP ntp(wifiUdp);
-// Web web;
+Settings settings;
 
 volatile time_t epochDiff;
 time_t nextTime;
+
 //30 seconds
 const time_t interval = 30000;
 void updateEpoch(void * unused);
@@ -83,7 +85,7 @@ void setup() {
   ntp.begin();
   nextTime = 0;
 
-  web_init();
+  web_init(&settings);
 
 
   xTaskCreate(

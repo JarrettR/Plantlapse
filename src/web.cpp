@@ -16,16 +16,16 @@ char buffer[1000];
 
 WebServer server(80);
 
-Settings settings;
+Settings *websettings;
 
-void web_init(void) {
+void web_init(Settings *settings_in) {
   //Calls the function handleRoot regardless of the server uri ex.(192.168.100.110/edit server uri is "/edit")
 
   server.begin();//starts the server
   Serial.println("HTTP server started");
     server.onNotFound(handleRoot);
   restServerRouting();
-  settings.begin();
+  websettings = settings_in;
 }
 
 void web_handleclient(void) {
@@ -61,6 +61,7 @@ void getHelloWord() {
 }
 
 void getJpg() {
+  config_camera(websettings);
   auto frame = esp32cam::capture();
   if (frame == nullptr) {
     Serial.println("CAPTURE FAIL");
@@ -78,6 +79,7 @@ void getJpg() {
 
 void getSettings() {
   setCrossOrigin();
+  Serial.println("Settings");
   jsonDocument.clear();
 //   switch(status) {
 //     case STATUS_RUNNING:
@@ -93,8 +95,8 @@ void getSettings() {
 //   jsonDocument["current_value"] = current_channel_value;
 
 
-  jsonDocument["gain"] = settings.gain;
-  jsonDocument["contrast"] = settings.contrast;
+  jsonDocument["gain"] = websettings->gain;
+  jsonDocument["contrast"] = websettings->contrast;
   serializeJson(jsonDocument, buffer);
 
   server.send(200, "application/json", buffer);
