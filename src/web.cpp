@@ -7,13 +7,15 @@ void handleRoot();
 void handleNotFound();
 void setCrossOrigin();
 void enableTimelapse();
+void disableTimelapse();
 void getHelloWord();
 void getJpg();
 void getSettings();
+void setSetting();
 String getContentType(String filename);
 
-StaticJsonDocument<1000> jsonDocument;
-char buffer[1000];
+StaticJsonDocument<2000> jsonDocument;
+char buffer[2000];
 
 WebServer server(80);
 
@@ -40,9 +42,11 @@ void restServerRouting() {
             F("Success!"));
     });
     server.on(F("/helloWorld"), HTTP_GET, getHelloWord);
-    server.on(F("/jpg"), HTTP_GET, getJpg);
+    server.on(F("/now.jpg"), HTTP_GET, getJpg);
     server.on(F("/getsettings"), HTTP_GET, getSettings);
     server.on(F("/enabletimelapse"), HTTP_GET, enableTimelapse);
+    server.on(F("/disabletimelapse"), HTTP_GET, disableTimelapse);
+    server.on(F("/set"), HTTP_POST, setSetting);
     // server.on(F("/getscriptlist"), HTTP_GET, getScriptList);
 }
 
@@ -62,8 +66,51 @@ void enableTimelapse() {
   websettings->timelapse_enabled = 1;
   server.send(200, "text/json", "{\"name\": \"Success\"}");
 }
+
+
+void disableTimelapse() {
+  websettings->timelapse_enabled = 0;
+  server.send(200, "text/json", "{\"name\": \"Success\"}");
+}
+
 void getHelloWord() {
   server.send(200, "text/json", "{\"name\": \"Hello world\"}");
+}
+
+void setSetting() {
+  setCrossOrigin();
+  Serial.println("Setting config");
+  if (server.hasArg("plain") == false) {
+    Serial.println("Failed");
+    return;
+  }
+  String body = server.arg("plain");
+  deserializeJson(jsonDocument, body);
+
+  websettings->timelapse_enabled = jsonDocument["timelapse_enabled"];
+  websettings->next_time = jsonDocument["next_time"];
+  websettings->interval = jsonDocument["interval"];
+  websettings->current_set = jsonDocument["current_set"];
+  websettings->current_photo = jsonDocument["current_photo"];
+
+  websettings->autogain = jsonDocument["autogain"];
+  websettings->autoexposure = jsonDocument["autoexposure"];
+  websettings->gain = jsonDocument["gain"];
+  websettings->exposure = jsonDocument["exposure"];
+  websettings->verticalflip = jsonDocument["verticalflip"];
+  websettings->quality = jsonDocument["quality"];
+  websettings->gainceiling = jsonDocument["gainceiling"];
+  websettings->brightness = jsonDocument["brightness"];
+  websettings->lenscorrection = jsonDocument["lenscorrection"];
+  websettings->saturation = jsonDocument["saturation"];
+  websettings->contrast = jsonDocument["contrast"];
+  websettings->sharpness = jsonDocument["sharpness"];
+  websettings->horizontalflip = jsonDocument["horizontalflip"];
+  websettings->blackpixelcorrection = jsonDocument["blackpixelcorrection"];
+  websettings->whitepixelcorrection = jsonDocument["whitepixelcorrection"];
+
+  // Respond to the client
+  server.send(200, "application/json", "{}");
 }
 
 void getJpg() {

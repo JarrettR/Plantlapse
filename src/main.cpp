@@ -111,21 +111,21 @@ void loop() {
   ArduinoOTA.handle();
   web_handleclient();
 
-  time_t time = epochDiff + (esp_timer_get_time() / 1000000);
-  if (time >= nextTime) {
-    //Snap
-    if(nextTime == 0) {
-      nextTime = time;
-    }
-    nextTime += interval;
-  }
+  // time_t time = epochDiff + (esp_timer_get_time() / 1000000);
+  // if (time >= nextTime) {
+  //   //Snap
+  //   if(nextTime == 0) {
+  //     nextTime = time;
+  //   }
+  //   nextTime += interval;
+  // }
   // Serial.println(ntp.epoch());
   // Serial.println(ntp.formattedTime("%d. %B %Y"));
 
   // Serial.println(ntp.formattedTime("%A %T"));
 
   // Serial.print('.');
-  vTaskDelay(120);
+  vTaskDelay(50);
 
 }
 
