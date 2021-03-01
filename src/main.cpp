@@ -31,6 +31,9 @@ const time_t interval = 30000;
 void lapse(void * unused);
 void updateEpoch(void * unused);
 
+void preLapse();
+void postLapse();
+
 void setup() {
 
   Serial.begin(115200);
@@ -104,7 +107,7 @@ void setup() {
     xTaskCreate(
       updateEpoch, // Task function
       "updateEpoch",           // String with name of task
-      1000,              // Stack size in bytes
+      2000,              // Stack size in bytes
       NULL,               // Parameter passed as input of the task
       tskIDLE_PRIORITY+1, // Priority of the task
       NULL);
@@ -128,12 +131,18 @@ void lapse(void * unused) {
       break;
     }
     if(settings.timelapse_enabled == true) {
-      time_t current_time = esp_timer_get_time() + epochDiff;
+      time_t current_time = (esp_timer_get_time() / 1000000) + epochDiff;
       char filename[40];
       sprintf(filename, "/%06d-%06d.jpg", settings.current_set, settings.current_photo);
 
       if (current_time >= settings.next_time) {
         Serial.println("Click! ");
+        Serial.print(current_time);
+        Serial.print(" ");
+        Serial.print((int)(esp_timer_get_time() / 1000000));
+        Serial.print(" ");
+        Serial.print(epochDiff);
+        Serial.print(" ");
         config_camera(&settings);
         auto frame = esp32cam::capture();
         if (frame == nullptr) {
@@ -143,9 +152,15 @@ void lapse(void * unused) {
         storage.writeFile(filename, frame->data(), frame->size());
         // storage.writeFile(filename, "Test-write");
         settings.current_photo++;
-        settings.next_time = current_time + settings.interval;
+        settings.next_time = current_time + (settings.interval / 1000);
+        Serial.println(settings.next_time);
       }
-      vTaskDelay(settings.interval / portTICK_PERIOD_MS);
+      time_t elapsed = ((esp_timer_get_time() / 1000000) + epochDiff) - current_time;
+      if (elapsed > settings.interval) {
+        elapsed = settings.interval;
+      }
+
+      vTaskDelay((settings.interval - elapsed) / portTICK_PERIOD_MS);
     } else {
       vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
@@ -157,8 +172,10 @@ void updateEpoch(void * unused) {
     if(_handlingOTA) {
       break;
     }
+    Serial.print("Correcting time: ");
     ntp.update();
     epochDiff = ntp.epoch() - (esp_timer_get_time() / 1000000);
+    Serial.println(ntp.epoch());
     // 30 minutes
     vTaskDelay(1800000 / portTICK_PERIOD_MS);
   }
