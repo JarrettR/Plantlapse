@@ -117,19 +117,6 @@ void loop() {
     web_handleclient();
   }
 
-  // time_t time = epochDiff + (esp_timer_get_time() / 1000000);
-  // if (time >= nextTime) {
-  //   //Snap
-  //   if(nextTime == 0) {
-  //     nextTime = time;
-  //   }
-  //   nextTime += interval;
-  // }
-  // Serial.println(ntp.epoch());
-  // Serial.println(ntp.formattedTime("%d. %B %Y"));
-
-  // Serial.println(ntp.formattedTime("%A %T"));
-
   // Serial.print('.');
   // vTaskDelay(50);
 
@@ -137,10 +124,13 @@ void loop() {
 
 void lapse(void * unused) {
   while(1) {
+    if(_handlingOTA) {
+      break;
+    }
     if(settings.timelapse_enabled == true) {
       time_t current_time = esp_timer_get_time() + epochDiff;
       char filename[40];
-      sprintf(filename, "/%06d/%06d.jpg", settings.current_set, settings.current_photo);
+      sprintf(filename, "/%06d-%06d.jpg", settings.current_set, settings.current_photo);
 
       if (current_time >= settings.next_time) {
         Serial.println("Click! ");
@@ -150,8 +140,8 @@ void lapse(void * unused) {
           Serial.println("CAPTURE FAIL");
           break;
         }
-        // Serial.println(filename);
         storage.writeFile(filename, frame->data(), frame->size());
+        // storage.writeFile(filename, "Test-write");
         settings.current_photo++;
         settings.next_time = current_time + settings.interval;
       }
@@ -164,6 +154,9 @@ void lapse(void * unused) {
 
 void updateEpoch(void * unused) {
   while(1) {
+    if(_handlingOTA) {
+      break;
+    }
     ntp.update();
     epochDiff = ntp.epoch() - (esp_timer_get_time() / 1000000);
     // 30 minutes
