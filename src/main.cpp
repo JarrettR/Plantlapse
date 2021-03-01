@@ -21,6 +21,8 @@ NTP ntp(wifiUdp);
 Settings settings;
 Storage storage;
 
+volatile bool _handlingOTA = false;
+
 volatile time_t epochDiff;
 time_t nextTime;
 
@@ -62,6 +64,7 @@ void setup() {
       else // U_SPIFFS
         type = "filesystem";
 
+      _handlingOTA = true;
       // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
       Serial.println("Start updating " + type);
     })
@@ -82,17 +85,18 @@ void setup() {
 
   ArduinoOTA.begin();
 
-
   ntp.begin();
 
   web_init(&settings);
-  camera_init();
 
+  storage.begin();
+
+  camera_init();
 
     xTaskCreate(
       lapse, // Task function
       "lapse",           // String with name of task
-      1000,              // Stack size in bytes
+      5000,              // Stack size in bytes
       NULL,               // Parameter passed as input of the task
       tskIDLE_PRIORITY+2, // Priority of the task
       NULL);
@@ -109,7 +113,9 @@ void setup() {
 
 void loop() {
   ArduinoOTA.handle();
-  web_handleclient();
+  if(!_handlingOTA) {
+    web_handleclient();
+  }
 
   // time_t time = epochDiff + (esp_timer_get_time() / 1000000);
   // if (time >= nextTime) {
@@ -125,28 +131,33 @@ void loop() {
   // Serial.println(ntp.formattedTime("%A %T"));
 
   // Serial.print('.');
-  vTaskDelay(50);
+  // vTaskDelay(50);
 
 }
 
 void lapse(void * unused) {
   while(1) {
-    if(settings.timelapse_enabled) {
+    if(settings.timelapse_enabled == true) {
       time_t current_time = esp_timer_get_time() + epochDiff;
+      char filename[40];
+      sprintf(filename, "/%06d/%06d.jpg", settings.current_set, settings.current_photo);
+
       if (current_time >= settings.next_time) {
-        Serial.println("Click");
+        Serial.println("Click! ");
         config_camera(&settings);
         auto frame = esp32cam::capture();
         if (frame == nullptr) {
           Serial.println("CAPTURE FAIL");
           break;
         }
-        storage.writeFile("a.jpg", frame->data(), frame->size());
+        // Serial.println(filename);
+        storage.writeFile(filename, frame->data(), frame->size());
+        settings.current_photo++;
         settings.next_time = current_time + settings.interval;
       }
       vTaskDelay(settings.interval / portTICK_PERIOD_MS);
     } else {
-      vTaskDelay(155 / portTICK_PERIOD_MS);
+      vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
   }
 }

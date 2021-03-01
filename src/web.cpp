@@ -86,9 +86,10 @@ void setSetting() {
   }
   String body = server.arg("plain");
   deserializeJson(jsonDocument, body);
+  Serial.println(body);
 
   websettings->timelapse_enabled = jsonDocument["timelapse_enabled"];
-  websettings->next_time = jsonDocument["next_time"];
+  // websettings->next_time = jsonDocument["next_time"];
   websettings->interval = jsonDocument["interval"];
   websettings->current_set = jsonDocument["current_set"];
   websettings->current_photo = jsonDocument["current_photo"];
@@ -142,10 +143,6 @@ void getSettings() {
 //     default:
 //       jsonDocument["status"] = "idle";
 //   }
-//   jsonDocument["csv_filename"] = csv_filename;
-//   jsonDocument["script_filename"] = script_filename;
-//   jsonDocument["current_channel"] = current_channel;
-//   jsonDocument["current_value"] = current_channel_value;
 
 
   jsonDocument["timelapse_enabled"] = websettings->timelapse_enabled;
