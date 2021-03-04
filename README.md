@@ -4,7 +4,7 @@
 Watching plants grow
 
 
-![Settings](docs/mint.gif)
+![Mint](docs/mint.gif)
 
 
 # What is this?
