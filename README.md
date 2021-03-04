@@ -31,7 +31,11 @@ Set your WiFi credentials in `credentials.h.CHANGEME` (and change the extension 
 
 Pointing your browser to http://plantcam.local will open up a settings page.
 
-![Settings](docs/settings.png)
+![Set](docs/set.png)
+
+http://plantcam.local/getsettings will return a JSON payload of all the current settings.
+
+![Get](docs/get.png)
 
 http://plantcam.local/now.jpg will snap a picture with the current settings and serve it up.
 
