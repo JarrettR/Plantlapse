@@ -1,20 +1,29 @@
-menu "Example Configuration"
+menu "OTA Configuration"
 
-    config EXAMPLE_FIRMWARE_UPGRADE_URL
+    config FIRMWARE_UPGRADE_URL
         string "firmware upgrade url endpoint"
         default "http://192.168.0.3:8070/plantlapse-app/build/plantlapse.bin"
         help
             URL of server which hosts the firmware
             image.
 
-    config EXAMPLE_FIRMWARE_UPGRADE_URL_FROM_STDIN
+    config FIRMWARE_UPGRADE_URL_FROM_STDIN
         bool
-        default y if EXAMPLE_FIRMWARE_UPGRADE_URL = "FROM_STDIN"
+        default y if FIRMWARE_UPGRADE_URL = "FROM_STDIN"
 
-    config EXAMPLE_SKIP_COMMON_NAME_CHECK
+    config SKIP_COMMON_NAME_CHECK
         bool "Skip server certificate CN fieldcheck"
         default n
         help
             This allows you to skip the validation of OTA server certificate CN field.
 
+endmenu
+menu "SD Card"
+
+    config FORMAT_IF_MOUNT_FAILED
+        bool "Format the card if mount failed"
+        default n
+        help
+            If this config item is set, format_if_mount_failed will be set to true and the card will be formatted if
+            the mount has failed.
 endmenu
