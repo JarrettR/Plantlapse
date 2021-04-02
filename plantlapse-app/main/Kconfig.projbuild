@@ -27,3 +27,18 @@ menu "SD Card"
             If this config item is set, format_if_mount_failed will be set to true and the card will be formatted if
             the mount has failed.
 endmenu
+menu "Webserver Configuration"
+
+    config MDNS_HOST_NAME
+        string "mDNS Host Name"
+        default "plantlapse"
+        help
+            Specify the domain name used in the mDNS service.
+            Note that webpage also take it as a part of URL where it will send GET/POST requests to.
+    config WEB_MOUNT_POINT
+        string "Website mount point in VFS"
+        default "/www"
+        help
+            Specify the mount point in VFS.
+
+endmenu

@@ -5,6 +5,7 @@
 #include "esp_event.h"
 #include "esp_log.h"
 #include "esp_ota_ops.h"
+#include "esp_netif.h"
 #include "esp_http_client.h"
 #include "esp_https_ota.h"
 #include "esp_wifi.h"
@@ -13,16 +14,20 @@
 #include "esp_vfs_fat.h"
 #include "driver/sdspi_host.h"
 #include "driver/spi_common.h"
+#include "esp_spiffs.h"
 #include "sdmmc_cmd.h"
 #include "driver/sdmmc_host.h"
 #include "sdkconfig.h"
+#include "driver/gpio.h"
+#include "mdns.h"
+#include "lwip/apps/netbiosns.h"
 
 #include "nvs.h"
 #include "nvs_flash.h"
 
 #define MOUNT_POINT "/sdcard"
 
-static const char *TAG = "ota";
+static const char *TAG = "main";
 extern const uint8_t server_cert_pem_start[] asm("_binary_ca_cert_pem_start");
 extern const uint8_t server_cert_pem_end[] asm("_binary_ca_cert_pem_end");
 
@@ -35,6 +40,10 @@ volatile uint8_t init_ota_update = 0;
 #ifndef SPI_DMA_CHAN
 #define SPI_DMA_CHAN    1
 #endif //SPI_DMA_CHAN
+
+#define MDNS_INSTANCE "plantlapse"
+
+esp_err_t start_rest_server(const char *base_path);
 
 esp_err_t _http_event_handler(esp_http_client_event_t *evt)
 {
@@ -103,26 +112,9 @@ void ota_task(void *pvParameter)
     }
 }
 
-void app_main(void)
+void sd_init()
 {
-    // Initialize NVS.
-    esp_err_t err = nvs_flash_init();
-    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        // 1.OTA app partition table has a smaller NVS partition size than the non-OTA
-        // partition table. This size mismatch may cause NVS initialization to fail.
-        // 2.NVS partition contains data in new format and cannot be recognized by this version of code.
-        // If this happens, we erase NVS partition and initialize NVS again.
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        err = nvs_flash_init();
-    }
-    ESP_ERROR_CHECK(err);
-
-    // Init network
-    ESP_ERROR_CHECK(esp_netif_init());
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-    ESP_ERROR_CHECK(example_connect());
-    esp_wifi_set_ps(WIFI_PS_NONE);
-
+    esp_err_t err;
 
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
 #ifdef CONFIG_FORMAT_IF_MOUNT_FAILED
@@ -217,6 +209,83 @@ void app_main(void)
     // All done, unmount partition and disable SDMMC or SPI peripheral
     esp_vfs_fat_sdcard_unmount(mount_point, card);
     ESP_LOGI(TAG, "Card unmounted");
+}
 
-    xTaskCreate(&ota_task, "ota_task", 8192, NULL, 5, NULL);
+esp_err_t init_fs(void)
+{
+    sdmmc_host_t host = SDMMC_HOST_DEFAULT();
+    sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
+
+    gpio_set_pull_mode(15, GPIO_PULLUP_ONLY); // CMD
+    gpio_set_pull_mode(2, GPIO_PULLUP_ONLY);  // D0
+    gpio_set_pull_mode(4, GPIO_PULLUP_ONLY);  // D1
+    gpio_set_pull_mode(12, GPIO_PULLUP_ONLY); // D2
+    gpio_set_pull_mode(13, GPIO_PULLUP_ONLY); // D3
+
+    esp_vfs_fat_sdmmc_mount_config_t mount_config = {
+        .format_if_mount_failed = true,
+        .max_files = 4,
+        .allocation_unit_size = 16 * 1024
+    };
+
+    sdmmc_card_t *card;
+    esp_err_t ret = esp_vfs_fat_sdmmc_mount(CONFIG_WEB_MOUNT_POINT, &host, &slot_config, &mount_config, &card);
+    if (ret != ESP_OK) {
+        if (ret == ESP_FAIL) {
+            ESP_LOGE(TAG, "Failed to mount filesystem.");
+        } else {
+            ESP_LOGE(TAG, "Failed to initialize the card (%s)", esp_err_to_name(ret));
+        }
+        return ESP_FAIL;
+    }
+    /* print card info if mount successfully */
+    sdmmc_card_print_info(stdout, card);
+    return ESP_OK;
+}
+
+static void initialise_mdns(void)
+{
+    mdns_init();
+    mdns_hostname_set(CONFIG_MDNS_HOST_NAME);
+    mdns_instance_name_set(MDNS_INSTANCE);
+
+    mdns_txt_item_t serviceTxtData[] = {
+        {"board", "esp32"},
+        {"path", "/"}
+    };
+
+    ESP_ERROR_CHECK(mdns_service_add("ESP32-WebServer", "_http", "_tcp", 80, serviceTxtData,
+                                     sizeof(serviceTxtData) / sizeof(serviceTxtData[0])));
+}
+
+void app_main(void)
+{
+    // Initialize NVS.
+    esp_err_t err = nvs_flash_init();
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        // 1.OTA app partition table has a smaller NVS partition size than the non-OTA
+        // partition table. This size mismatch may cause NVS initialization to fail.
+        // 2.NVS partition contains data in new format and cannot be recognized by this version of code.
+        // If this happens, we erase NVS partition and initialize NVS again.
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        err = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(err);
+
+    // Init network
+    ESP_ERROR_CHECK(esp_netif_init());
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+    initialise_mdns();
+    netbiosns_init();
+    netbiosns_set_name(CONFIG_MDNS_HOST_NAME);
+    ESP_ERROR_CHECK(example_connect());
+    esp_wifi_set_ps(WIFI_PS_NONE);
+
+    //ESP_ERROR_CHECK(init_fs());
+    ESP_ERROR_CHECK(start_rest_server(CONFIG_WEB_MOUNT_POINT));
+    
+
+    sd_init();
+
+    //xTaskCreate(&ota_task, "ota_task", 8192, NULL, 5, NULL);
 }
