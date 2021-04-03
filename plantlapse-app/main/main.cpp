@@ -36,7 +36,7 @@ static const char *TAG = "main";
 extern const uint8_t server_cert_pem_start[] asm("_binary_ca_cert_pem_start");
 extern const uint8_t server_cert_pem_end[] asm("_binary_ca_cert_pem_end");
 
-volatile uint8_t init_ota_update = 0;
+Settings plSettings;
 
 #define OTA_URL_SIZE 256 
 
@@ -84,6 +84,9 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
 
 void ota_task(void *pvParameter)
 {
+    while(plSettings.ota_start == false) {
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
     ESP_LOGI(TAG, "Starting OTA");
 
     esp_http_client_config_t config = {
@@ -293,10 +296,10 @@ void app_main(void)
     esp_wifi_set_ps(WIFI_PS_NONE);
 
     //ESP_ERROR_CHECK(init_fs());
-    ESP_ERROR_CHECK(start_rest_server(CONFIG_WEB_MOUNT_POINT));
+    ESP_ERROR_CHECK(web_init(CONFIG_WEB_MOUNT_POINT, &plSettings));
     
 
-    sd_init();
+    //sd_init();
 
-    //xTaskCreate(&ota_task, "ota_task", 8192, NULL, 5, NULL);
+    xTaskCreate(&ota_task, "ota_task", 8192, NULL, 5, NULL);
 }

@@ -14,8 +14,11 @@
 #include "esp_vfs.h"
 #include "cJSON.h"
 
+#include "include/rest_server.hpp"
+
 static const char *REST_TAG = "esp-rest";
 
+Settings *websettings;
 
 #define FILE_PATH_MAX (ESP_VFS_PATH_MAX + 128)
 #define SCRATCH_BUFSIZE (10240)
@@ -147,6 +150,21 @@ static esp_err_t system_info_get_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+/* Handler for initiating OTA firmware updates */
+static esp_err_t ota_get_handler(httpd_req_t *req)
+{
+    httpd_resp_set_type(req, "application/json");
+    cJSON *root = cJSON_CreateObject();
+    cJSON_AddNumberToObject(root, "raw", esp_random() % 20);
+    cJSON_AddNumberToObject(root, "ota_start", 1);
+    const char *sys_info = cJSON_Print(root);
+    httpd_resp_sendstr(req, sys_info);
+    free((void *)sys_info);
+    cJSON_Delete(root);
+    websettings->ota_start = true;
+    return ESP_OK;
+}
+
 /* Simple handler for getting temperature data */
 static esp_err_t temperature_data_get_handler(httpd_req_t *req)
 {
@@ -158,6 +176,12 @@ static esp_err_t temperature_data_get_handler(httpd_req_t *req)
     free((void *)sys_info);
     cJSON_Delete(root);
     return ESP_OK;
+}
+
+esp_err_t web_init(const char *base_path, Settings *settings_in)
+{
+    websettings = settings_in;
+    return start_rest_server(base_path);
 }
 
 esp_err_t start_rest_server(const char *base_path)
@@ -192,6 +216,15 @@ esp_err_t start_rest_server(const char *base_path)
         .user_ctx = rest_context
     };
     httpd_register_uri_handler(server, &temperature_data_get_uri);
+
+    /* URI handler for initiating OTA firmware updates */
+    httpd_uri_t ota_get_uri = {
+        .uri = "/api/v1/ota/start",
+        .method = HTTP_GET,
+        .handler = ota_get_handler,
+        .user_ctx = rest_context
+    };
+    httpd_register_uri_handler(server, &ota_get_uri);
 
     /* URI handler for light brightness control */
     httpd_uri_t light_brightness_post_uri = {

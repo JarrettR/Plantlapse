@@ -16,6 +16,7 @@ public:
 
 
   bool timelapse_enabled;
+  volatile bool ota_start;
   time_t next_time;
   //In ms
   time_t interval;
