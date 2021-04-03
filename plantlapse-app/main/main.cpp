@@ -25,6 +25,11 @@
 #include "nvs.h"
 #include "nvs_flash.h"
 
+
+#include "include/pins.h"
+#include "include/settings.hpp"
+#include "include/rest_server.h"
+
 #define MOUNT_POINT "/sdcard"
 
 static const char *TAG = "main";
@@ -42,6 +47,10 @@ volatile uint8_t init_ota_update = 0;
 #endif //SPI_DMA_CHAN
 
 #define MDNS_INSTANCE "plantlapse"
+
+extern "C" {
+	void app_main(void);
+}
 
 esp_err_t start_rest_server(const char *base_path);
 
@@ -141,11 +150,11 @@ void sd_init()
     // GPIOs 15, 2, 4, 12, 13 should have external 10k pull-ups.
     // Internal pull-ups are not sufficient. However, enabling internal pull-ups
     // does make a difference some boards, so we do that here.
-    gpio_set_pull_mode(15, GPIO_PULLUP_ONLY);   // CMD, needed in 4- and 1- line modes
-    gpio_set_pull_mode(2, GPIO_PULLUP_ONLY);    // D0, needed in 4- and 1-line modes
-    gpio_set_pull_mode(4, GPIO_PULLUP_ONLY);    // D1, needed in 4-line mode only
-    gpio_set_pull_mode(12, GPIO_PULLUP_ONLY);   // D2, needed in 4-line mode only
-    gpio_set_pull_mode(13, GPIO_PULLUP_ONLY);   // D3, needed in 4- and 1-line modes
+    gpio_set_pull_mode(PIN_SD_CMD, GPIO_PULLUP_ONLY);   // CMD, needed in 4- and 1- line modes
+    gpio_set_pull_mode(PIN_SD_D0, GPIO_PULLUP_ONLY);    // D0, needed in 4- and 1-line modes
+    gpio_set_pull_mode(PIN_SD_D1, GPIO_PULLUP_ONLY);    // D1, needed in 4-line mode only
+    gpio_set_pull_mode(PIN_SD_D2, GPIO_PULLUP_ONLY);   // D2, needed in 4-line mode only
+    gpio_set_pull_mode(PIN_SD_D3, GPIO_PULLUP_ONLY);   // D3, needed in 4- and 1-line modes
 
     err = esp_vfs_fat_sdmmc_mount(mount_point, &host, &slot_config, &mount_config, &card);
 
@@ -216,11 +225,11 @@ esp_err_t init_fs(void)
     sdmmc_host_t host = SDMMC_HOST_DEFAULT();
     sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
 
-    gpio_set_pull_mode(15, GPIO_PULLUP_ONLY); // CMD
-    gpio_set_pull_mode(2, GPIO_PULLUP_ONLY);  // D0
-    gpio_set_pull_mode(4, GPIO_PULLUP_ONLY);  // D1
-    gpio_set_pull_mode(12, GPIO_PULLUP_ONLY); // D2
-    gpio_set_pull_mode(13, GPIO_PULLUP_ONLY); // D3
+    gpio_set_pull_mode(PIN_SD_CMD, GPIO_PULLUP_ONLY); // CMD
+    gpio_set_pull_mode(PIN_SD_D0, GPIO_PULLUP_ONLY);  // D0
+    gpio_set_pull_mode(PIN_SD_D1, GPIO_PULLUP_ONLY);  // D1
+    gpio_set_pull_mode(PIN_SD_D2, GPIO_PULLUP_ONLY); // D2
+    gpio_set_pull_mode(PIN_SD_D3, GPIO_PULLUP_ONLY); // D3
 
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
         .format_if_mount_failed = true,
@@ -260,6 +269,8 @@ static void initialise_mdns(void)
 
 void app_main(void)
 {
+    ESP_LOGI(TAG, "Version: %s", esp_ota_get_app_description()->version);
+
     // Initialize NVS.
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {

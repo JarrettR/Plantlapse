@@ -145,7 +145,8 @@ static esp_err_t system_info_get_handler(httpd_req_t *req)
     cJSON *root = cJSON_CreateObject();
     esp_chip_info_t chip_info;
     esp_chip_info(&chip_info);
-    cJSON_AddStringToObject(root, "version", IDF_VER);
+    cJSON_AddStringToObject(root, "idfversion", IDF_VER);
+    //cJSON_AddStringToObject(root, "version", esp_ota_get_app_description());
     cJSON_AddNumberToObject(root, "cores", chip_info.cores);
     const char *sys_info = cJSON_Print(root);
     httpd_resp_sendstr(req, sys_info);
