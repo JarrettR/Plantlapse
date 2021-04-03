@@ -28,7 +28,7 @@
 
 #include "include/pins.h"
 #include "include/settings.hpp"
-#include "include/rest_server.h"
+#include "include/rest_server.hpp"
 
 #define MOUNT_POINT "/sdcard"
 

@@ -15,15 +15,7 @@
 #include "cJSON.h"
 
 static const char *REST_TAG = "esp-rest";
-#define REST_CHECK(a, str, goto_tag, ...)                                              \
-    do                                                                                 \
-    {                                                                                  \
-        if (!(a))                                                                      \
-        {                                                                              \
-            ESP_LOGE(REST_TAG, "%s(%d): " str, __FUNCTION__, __LINE__, ##__VA_ARGS__); \
-            goto goto_tag;                                                             \
-        }                                                                              \
-    } while (0)
+
 
 #define FILE_PATH_MAX (ESP_VFS_PATH_MAX + 128)
 #define SCRATCH_BUFSIZE (10240)
@@ -170,9 +162,9 @@ static esp_err_t temperature_data_get_handler(httpd_req_t *req)
 
 esp_err_t start_rest_server(const char *base_path)
 {
-    REST_CHECK(base_path, "wrong base path", err);
-    rest_server_context_t *rest_context = calloc(1, sizeof(rest_server_context_t));
-    REST_CHECK(rest_context, "No memory for rest context", err);
+    //REST_CHECK(base_path, "wrong base path", err);
+    rest_server_context_t *rest_context = (rest_server_context_t*)calloc(1, sizeof(rest_server_context_t));
+    //REST_CHECK(rest_context, "No memory for rest context", err);
     strlcpy(rest_context->base_path, base_path, sizeof(rest_context->base_path));
 
     httpd_handle_t server = NULL;
@@ -180,7 +172,8 @@ esp_err_t start_rest_server(const char *base_path)
     config.uri_match_fn = httpd_uri_match_wildcard;
 
     ESP_LOGI(REST_TAG, "Starting HTTP Server");
-    REST_CHECK(httpd_start(&server, &config) == ESP_OK, "Start server failed", err_start);
+    //REST_CHECK(httpd_start(&server, &config) == ESP_OK, "Start server failed", err_start);
+    httpd_start(&server, &config);
 
     /* URI handler for fetching system info */
     httpd_uri_t system_info_get_uri = {
@@ -219,8 +212,5 @@ esp_err_t start_rest_server(const char *base_path)
     httpd_register_uri_handler(server, &common_get_uri);
 
     return ESP_OK;
-err_start:
-    free(rest_context);
-err:
-    return ESP_FAIL;
+
 }
