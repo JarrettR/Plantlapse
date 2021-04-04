@@ -29,6 +29,7 @@
 #include "include/pins.h"
 #include "include/settings.hpp"
 #include "include/rest_server.hpp"
+#include "include/camera.hpp"
 
 #define MOUNT_POINT "/sdcard"
 
@@ -187,72 +188,7 @@ void sd_init()
     fclose(f);
     ESP_LOGI(TAG, "File written");
 
-    // Check if destination file exists before renaming
-    struct stat st;
-    if (stat(MOUNT_POINT"/foo.txt", &st) == 0) {
-        // Delete it if it exists
-        unlink(MOUNT_POINT"/foo.txt");
-    }
 
-    // Rename original file
-    ESP_LOGI(TAG, "Renaming file");
-    if (rename(MOUNT_POINT"/hello.txt", MOUNT_POINT"/foo.txt") != 0) {
-        ESP_LOGE(TAG, "Rename failed");
-        return;
-    }
-
-    // Open renamed file for reading
-    ESP_LOGI(TAG, "Reading file");
-    f = fopen(MOUNT_POINT"/foo.txt", "r");
-    if (f == NULL) {
-        ESP_LOGE(TAG, "Failed to open file for reading");
-        return;
-    }
-    char line[64];
-    fgets(line, sizeof(line), f);
-    fclose(f);
-    // strip newline
-    char* pos = strchr(line, '\n');
-    if (pos) {
-        *pos = '\0';
-    }
-    ESP_LOGI(TAG, "Read from file: '%s'", line);
-
-    // All done, unmount partition and disable SDMMC or SPI peripheral
-    esp_vfs_fat_sdcard_unmount(mount_point, card);
-    ESP_LOGI(TAG, "Card unmounted");
-}
-
-esp_err_t init_fs(void)
-{
-    sdmmc_host_t host = SDMMC_HOST_DEFAULT();
-    sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
-
-    gpio_set_pull_mode(PIN_SD_CMD, GPIO_PULLUP_ONLY); // CMD
-    gpio_set_pull_mode(PIN_SD_D0, GPIO_PULLUP_ONLY);  // D0
-    gpio_set_pull_mode(PIN_SD_D1, GPIO_PULLUP_ONLY);  // D1
-    gpio_set_pull_mode(PIN_SD_D2, GPIO_PULLUP_ONLY); // D2
-    gpio_set_pull_mode(PIN_SD_D3, GPIO_PULLUP_ONLY); // D3
-
-    esp_vfs_fat_sdmmc_mount_config_t mount_config = {
-        .format_if_mount_failed = true,
-        .max_files = 4,
-        .allocation_unit_size = 16 * 1024
-    };
-
-    sdmmc_card_t *card;
-    esp_err_t ret = esp_vfs_fat_sdmmc_mount(CONFIG_WEB_MOUNT_POINT, &host, &slot_config, &mount_config, &card);
-    if (ret != ESP_OK) {
-        if (ret == ESP_FAIL) {
-            ESP_LOGE(TAG, "Failed to mount filesystem.");
-        } else {
-            ESP_LOGE(TAG, "Failed to initialize the card (%s)", esp_err_to_name(ret));
-        }
-        return ESP_FAIL;
-    }
-    /* print card info if mount successfully */
-    sdmmc_card_print_info(stdout, card);
-    return ESP_OK;
 }
 
 static void initialise_mdns(void)
@@ -298,8 +234,8 @@ void app_main(void)
     //ESP_ERROR_CHECK(init_fs());
     ESP_ERROR_CHECK(web_init(CONFIG_WEB_MOUNT_POINT, &plSettings));
     
-
-    //sd_init();
+    sd_init();
+    camera_init();
 
     xTaskCreate(&ota_task, "ota_task", 8192, NULL, 5, NULL);
 }
