@@ -25,9 +25,23 @@ Here are some features:
 
 # How does it work?
 
-Clone, use PlatformIO, etc.
+Using the ESP-IDF V4.2:
 
-Set your WiFi credentials in `credentials.h.CHANGEME` (and change the extension to `.h`), and then flash to your ESP32-Cam.
+Clone and then `make menuconfig` to set up your particular parameters.
+
+Serial flasher Config: 16MB flash size
+
+Partition Table: Factory app, two OTA definitions
+
+OTA Configuation: `http://192.168.1.112:8070/plantlapse-app/build/plantlapse.bin` or similar, and check "skip server cert"
+
+Example Connection Configuration: Your wifi AP credentials
+
+ESP HTTPS OTA: Allow HTTP for OTA
+
+(this might be something we can work on, in the meantime, keep it within your LAN)
+
+
 
 Pointing your browser to http://plantcam.local will open up a settings page.
 

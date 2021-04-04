@@ -150,6 +150,41 @@ static esp_err_t system_info_get_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+/* Handler for returning all settings */
+static esp_err_t settings_get_handler(httpd_req_t *req)
+{
+    httpd_resp_set_type(req, "application/json");
+    cJSON *root = cJSON_CreateObject();
+    cJSON_AddBoolToObject(root, "timelapse_enabled", websettings->timelapse_enabled);
+    cJSON_AddBoolToObject(root, "ota_start", websettings->ota_start);
+    cJSON_AddNumberToObject(root, "next_time", websettings->next_time);
+    cJSON_AddNumberToObject(root, "interval", websettings->interval);
+    cJSON_AddNumberToObject(root, "current_set", websettings->current_set);
+    cJSON_AddNumberToObject(root, "current_photo", websettings->current_photo);
+    cJSON_AddNumberToObject(root, "resolution", websettings->resolution);
+    cJSON_AddNumberToObject(root, "format", websettings->format);
+    cJSON_AddBoolToObject(root, "autogain", websettings->autogain);
+    cJSON_AddBoolToObject(root, "autoexposure", websettings->autoexposure);
+    cJSON_AddNumberToObject(root, "gain", websettings->gain);
+    cJSON_AddNumberToObject(root, "exposure", websettings->exposure);
+    cJSON_AddBoolToObject(root, "verticalflip", websettings->verticalflip);
+    cJSON_AddNumberToObject(root, "quality", websettings->quality);
+    cJSON_AddNumberToObject(root, "gainceiling", websettings->gainceiling);
+    cJSON_AddNumberToObject(root, "brightness", websettings->brightness);
+    cJSON_AddBoolToObject(root, "lenscorrection", websettings->lenscorrection);
+    cJSON_AddNumberToObject(root, "saturation", websettings->saturation);
+    cJSON_AddNumberToObject(root, "contrast", websettings->contrast);
+    cJSON_AddNumberToObject(root, "sharpness", websettings->sharpness);
+    cJSON_AddBoolToObject(root, "horizontalflip", websettings->horizontalflip);
+    cJSON_AddBoolToObject(root, "blackpixelcorrection", websettings->blackpixelcorrection);
+    cJSON_AddBoolToObject(root, "whitepixelcorrection", websettings->whitepixelcorrection);
+    const char *sys_info = cJSON_Print(root);
+    httpd_resp_sendstr(req, sys_info);
+    free((void *)sys_info);
+    cJSON_Delete(root);
+    return ESP_OK;
+}
+
 /* Handler for initiating OTA firmware updates */
 static esp_err_t ota_get_handler(httpd_req_t *req)
 {
@@ -201,7 +236,7 @@ esp_err_t start_rest_server(const char *base_path)
 
     /* URI handler for fetching system info */
     httpd_uri_t system_info_get_uri = {
-        .uri = "/api/v1/system/info",
+        .uri = "/api/get/system",
         .method = HTTP_GET,
         .handler = system_info_get_handler,
         .user_ctx = rest_context
@@ -217,14 +252,23 @@ esp_err_t start_rest_server(const char *base_path)
     };
     httpd_register_uri_handler(server, &temperature_data_get_uri);
 
+    /* URI handler for displaying settings */
+    httpd_uri_t settings_get_uri = {
+        .uri = "/api/get/settings",
+        .method = HTTP_GET,
+        .handler = settings_get_handler,
+        .user_ctx = rest_context
+    };
+    httpd_register_uri_handler(server, &settings_get_uri);
+
     /* URI handler for initiating OTA firmware updates */
-    httpd_uri_t ota_get_uri = {
-        .uri = "/api/v1/ota/start",
+    httpd_uri_t ota_set_uri = {
+        .uri = "/api/set/ota/start",
         .method = HTTP_GET,
         .handler = ota_get_handler,
         .user_ctx = rest_context
     };
-    httpd_register_uri_handler(server, &ota_get_uri);
+    httpd_register_uri_handler(server, &ota_set_uri);
 
     /* URI handler for light brightness control */
     httpd_uri_t light_brightness_post_uri = {
