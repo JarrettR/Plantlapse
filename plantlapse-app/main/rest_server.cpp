@@ -200,6 +200,21 @@ static esp_err_t ota_get_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+/* Handler for initiating restart */
+static esp_err_t reset_get_handler(httpd_req_t *req)
+{
+    httpd_resp_set_type(req, "application/json");
+    cJSON *root = cJSON_CreateObject();
+    cJSON_AddNumberToObject(root, "raw", esp_random() % 20);
+    cJSON_AddNumberToObject(root, "reset_start", 1);
+    const char *sys_info = cJSON_Print(root);
+    httpd_resp_sendstr(req, sys_info);
+    free((void *)sys_info);
+    cJSON_Delete(root);
+    esp_restart();
+    return ESP_OK;
+}
+
 /* Simple handler for getting temperature data */
 static esp_err_t temperature_data_get_handler(httpd_req_t *req)
 {
@@ -269,6 +284,15 @@ esp_err_t start_rest_server(const char *base_path)
         .user_ctx = rest_context
     };
     httpd_register_uri_handler(server, &ota_set_uri);
+
+    /* URI handler for initiating restart */
+    httpd_uri_t reset_set_uri = {
+        .uri = "/api/set/reset/start",
+        .method = HTTP_GET,
+        .handler = reset_get_handler,
+        .user_ctx = rest_context
+    };
+    httpd_register_uri_handler(server, &reset_set_uri);
 
     /* URI handler for light brightness control */
     httpd_uri_t light_brightness_post_uri = {
