@@ -31,7 +31,7 @@ Clone and then `make menuconfig` to set up your particular parameters.
 
 Serial flasher Config: 16MB flash size
 
-Partition Table: Factory app, two OTA definitions
+Partition Table: Custom
 
 OTA Configuation: `http://192.168.1.112:8070/plantlapse-app/build/plantlapse.bin` or similar, and check "skip server cert"
 
@@ -40,6 +40,8 @@ Example Connection Configuration: Your wifi AP credentials
 ESP HTTPS OTA: Allow HTTP for OTA
 
 (this might be something we can work on, in the meantime, keep it within your LAN)
+
+ESP32-specific: Support for external, SPI-connected RAM
 
 
 
