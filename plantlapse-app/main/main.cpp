@@ -205,6 +205,25 @@ static void initialise_mdns(void)
     ESP_ERROR_CHECK(mdns_service_add("ESP32-WebServer", "_http", "_tcp", 80, serviceTxtData,
                                      sizeof(serviceTxtData) / sizeof(serviceTxtData[0])));
 }
+void snap_task(void *pvParameter)
+{
+    while(1) {
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        if(plSettings.snap == true) {
+            ESP_LOGI(TAG, "Click!");
+
+            //FILE* f = fopen(MOUNT_POINT"/now.jpg", "wb");
+            // if (f == NULL) {
+            //     ESP_LOGE(TAG, "Failed to open file for writing");
+            //     break;
+            // }
+            //fwrite((char *)buf,1,strlen(buf),f);
+            // camera_capture(fwrite, f);
+            camera_capture();
+            plSettings.snap = false;
+        }
+    }
+}
 
 void app_main(void)
 {
@@ -238,4 +257,5 @@ void app_main(void)
     camera_init();
 
     xTaskCreate(&ota_task, "ota_task", 8192, NULL, 5, NULL);
+    xTaskCreate(&snap_task, "snap_task", 8192, NULL, 5, NULL);
 }

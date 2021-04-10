@@ -80,6 +80,7 @@ static esp_err_t rest_common_get_handler(httpd_req_t *req)
         if (read_bytes == -1) {
             ESP_LOGE(REST_TAG, "Failed to read file : %s", filepath);
         } else if (read_bytes > 0) {
+            ESP_LOGI(REST_TAG, "Chunk size: 0x%02x", read_bytes);
             /* Send the buffer contents as HTTP response chunk */
             if (httpd_resp_send_chunk(req, chunk, read_bytes) != ESP_OK) {
                 close(fd);
@@ -215,6 +216,21 @@ static esp_err_t reset_get_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+/* Handler for initiating single picture */
+static esp_err_t snap_get_handler(httpd_req_t *req)
+{
+    httpd_resp_set_type(req, "application/json");
+    cJSON *root = cJSON_CreateObject();
+    cJSON_AddNumberToObject(root, "raw", esp_random() % 20);
+    cJSON_AddNumberToObject(root, "snap", 1);
+    const char *sys_info = cJSON_Print(root);
+    httpd_resp_sendstr(req, sys_info);
+    free((void *)sys_info);
+    cJSON_Delete(root);
+    websettings->snap = true;
+    return ESP_OK;
+}
+
 /* Simple handler for getting temperature data */
 static esp_err_t temperature_data_get_handler(httpd_req_t *req)
 {
@@ -284,6 +300,15 @@ esp_err_t start_rest_server(const char *base_path)
         .user_ctx = rest_context
     };
     httpd_register_uri_handler(server, &ota_set_uri);
+
+    /* URI handler for starting picture */
+    httpd_uri_t snap_set_uri = {
+        .uri = "/api/set/snap/start",
+        .method = HTTP_GET,
+        .handler = snap_get_handler,
+        .user_ctx = rest_context
+    };
+    httpd_register_uri_handler(server, &snap_set_uri);
 
     /* URI handler for initiating restart */
     httpd_uri_t reset_set_uri = {

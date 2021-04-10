@@ -7,6 +7,7 @@ Settings::Settings() {
 
   timelapse_enabled = 0;
   ota_start = 0;
+  snap = 1;
   next_time = 0;
   interval = 4000;
   current_set = 0;

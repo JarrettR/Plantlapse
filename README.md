@@ -33,6 +33,8 @@ Serial flasher Config: 16MB flash size
 
 Partition Table: Custom
 
+Webserver Configuration: Website mount point: `/sdcard`
+
 OTA Configuation: `http://192.168.1.112:8070/plantlapse-app/build/plantlapse.bin` or similar, and check "skip server cert"
 
 Example Connection Configuration: Your wifi AP credentials

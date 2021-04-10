@@ -6,3 +6,6 @@
 #include "esp_log.h"
 
 esp_err_t camera_init();
+// esp_err_t camera_capture(size_t (*save)(const void*, size_t, size_t, FILE *), FILE * f);
+esp_err_t camera_capture();
+ 

@@ -51,6 +51,7 @@ esp_err_t camera_init(){
     return ESP_OK;
 }
 
+// esp_err_t camera_capture(size_t (*saveToSd)(const void*, size_t, size_t, FILE *), FILE * f){
 esp_err_t camera_capture(){
     //acquire a frame
     camera_fb_t * fb = esp_camera_fb_get();
@@ -58,9 +59,17 @@ esp_err_t camera_capture(){
         ESP_LOGE(TAG, "Camera Capture Failed");
         return ESP_FAIL;
     }
+    FILE* f = fopen("/sdcard/now.jpg", "wb");
+    if (f == NULL) {
+        ESP_LOGE(TAG, "Failed to open file for writing");
+        return ESP_FAIL;
+    }
     //replace this with your own function
     //process_image(fb->width, fb->height, fb->format, fb->buf, fb->len);
-  
+    fwrite(fb->buf,fb->len,1,f);
+    ESP_LOGI(TAG, "Writing %d bytes", fb->len);
+	fclose(f);
+
     //return the frame buffer back to the driver for reuse
     esp_camera_fb_return(fb);
     return ESP_OK;
