@@ -42,6 +42,8 @@ static esp_err_t set_content_type_from_file(httpd_req_t *req, const char *filepa
         type = "text/css";
     } else if (CHECK_FILE_EXTENSION(filepath, ".png")) {
         type = "image/png";
+    } else if (CHECK_FILE_EXTENSION(filepath, ".jpg")) {
+        type = "image/jpg";
     } else if (CHECK_FILE_EXTENSION(filepath, ".ico")) {
         type = "image/x-icon";
     } else if (CHECK_FILE_EXTENSION(filepath, ".svg")) {
@@ -101,38 +103,6 @@ static esp_err_t rest_common_get_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-/* Simple handler for light brightness control */
-static esp_err_t light_brightness_post_handler(httpd_req_t *req)
-{
-    int total_len = req->content_len;
-    int cur_len = 0;
-    char *buf = ((rest_server_context_t *)(req->user_ctx))->scratch;
-    int received = 0;
-    if (total_len >= SCRATCH_BUFSIZE) {
-        /* Respond with 500 Internal Server Error */
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "content too long");
-        return ESP_FAIL;
-    }
-    while (cur_len < total_len) {
-        received = httpd_req_recv(req, buf + cur_len, total_len);
-        if (received <= 0) {
-            /* Respond with 500 Internal Server Error */
-            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to post control value");
-            return ESP_FAIL;
-        }
-        cur_len += received;
-    }
-    buf[total_len] = '\0';
-
-    cJSON *root = cJSON_Parse(buf);
-    int red = cJSON_GetObjectItem(root, "red")->valueint;
-    int green = cJSON_GetObjectItem(root, "green")->valueint;
-    int blue = cJSON_GetObjectItem(root, "blue")->valueint;
-    ESP_LOGI(REST_TAG, "Light control: red = %d, green = %d, blue = %d", red, green, blue);
-    cJSON_Delete(root);
-    httpd_resp_sendstr(req, "Post control value successfully");
-    return ESP_OK;
-}
 
 /* Simple handler for getting system handler */
 static esp_err_t system_info_get_handler(httpd_req_t *req)
@@ -157,7 +127,7 @@ static esp_err_t settings_get_handler(httpd_req_t *req)
     httpd_resp_set_type(req, "application/json");
     cJSON *root = cJSON_CreateObject();
     cJSON_AddBoolToObject(root, "timelapse_enabled", websettings->timelapse_enabled);
-    cJSON_AddBoolToObject(root, "ota_start", websettings->ota_start);
+    //cJSON_AddBoolToObject(root, "ota_start", websettings->ota_start);
     cJSON_AddNumberToObject(root, "next_time", websettings->next_time);
     cJSON_AddNumberToObject(root, "interval", websettings->interval);
     cJSON_AddNumberToObject(root, "current_set", websettings->current_set);
@@ -183,6 +153,45 @@ static esp_err_t settings_get_handler(httpd_req_t *req)
     httpd_resp_sendstr(req, sys_info);
     free((void *)sys_info);
     cJSON_Delete(root);
+    return ESP_OK;
+}
+
+/* Simple handler for setting configuration variables */
+static esp_err_t settings_post_handler(httpd_req_t *req)
+{
+    int total_len = req->content_len;
+    ESP_LOGI(REST_TAG, "Request length: 0x%x", total_len);
+    int cur_len = 0;
+    char *buf = ((rest_server_context_t *)(req->user_ctx))->scratch;
+    int received = 0;
+    if (total_len >= SCRATCH_BUFSIZE) {
+        /* Respond with 500 Internal Server Error */
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "content too long");
+        return ESP_FAIL;
+    }
+    while (cur_len < total_len) {
+        received = httpd_req_recv(req, buf + cur_len, total_len);
+        if (received <= 0) {
+            /* Respond with 500 Internal Server Error */
+            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to post control value");
+            return ESP_FAIL;
+        }
+        cur_len += received;
+    }
+    buf[total_len] = '\0';
+    ESP_LOGI(REST_TAG, "Request content: %s", buf);
+
+    cJSON *root = cJSON_Parse(buf);
+    if(root == NULL) {
+        ESP_LOGW(REST_TAG, "Request invalid");
+        return ESP_FAIL;
+    }
+    int timelapse_enabled = cJSON_GetObjectItem(root, "timelapse_enabled")->valueint;
+    int interval = cJSON_GetObjectItem(root, "interval")->valueint;
+    websettings->timelapse_enabled = timelapse_enabled;
+    websettings->interval = interval;
+    cJSON_Delete(root);
+    httpd_resp_sendstr(req, "Post control value successfully");
     return ESP_OK;
 }
 
@@ -231,18 +240,6 @@ static esp_err_t snap_get_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-/* Simple handler for getting temperature data */
-static esp_err_t temperature_data_get_handler(httpd_req_t *req)
-{
-    httpd_resp_set_type(req, "application/json");
-    cJSON *root = cJSON_CreateObject();
-    cJSON_AddNumberToObject(root, "raw", esp_random() % 20);
-    const char *sys_info = cJSON_Print(root);
-    httpd_resp_sendstr(req, sys_info);
-    free((void *)sys_info);
-    cJSON_Delete(root);
-    return ESP_OK;
-}
 
 esp_err_t web_init(const char *base_path, Settings *settings_in)
 {
@@ -274,15 +271,6 @@ esp_err_t start_rest_server(const char *base_path)
     };
     httpd_register_uri_handler(server, &system_info_get_uri);
 
-    /* URI handler for fetching temperature data */
-    httpd_uri_t temperature_data_get_uri = {
-        .uri = "/api/v1/temp/raw",
-        .method = HTTP_GET,
-        .handler = temperature_data_get_handler,
-        .user_ctx = rest_context
-    };
-    httpd_register_uri_handler(server, &temperature_data_get_uri);
-
     /* URI handler for displaying settings */
     httpd_uri_t settings_get_uri = {
         .uri = "/api/get/settings",
@@ -291,6 +279,15 @@ esp_err_t start_rest_server(const char *base_path)
         .user_ctx = rest_context
     };
     httpd_register_uri_handler(server, &settings_get_uri);
+
+    /* URI handler for setting configuration variables */
+    httpd_uri_t settings_post_uri = {
+        .uri = "/api/set/settings",
+        .method = HTTP_POST,
+        .handler = settings_post_handler,
+        .user_ctx = rest_context
+    };
+    httpd_register_uri_handler(server, &settings_post_uri);
 
     /* URI handler for initiating OTA firmware updates */
     httpd_uri_t ota_set_uri = {
@@ -318,15 +315,6 @@ esp_err_t start_rest_server(const char *base_path)
         .user_ctx = rest_context
     };
     httpd_register_uri_handler(server, &reset_set_uri);
-
-    /* URI handler for light brightness control */
-    httpd_uri_t light_brightness_post_uri = {
-        .uri = "/api/v1/light/brightness",
-        .method = HTTP_POST,
-        .handler = light_brightness_post_handler,
-        .user_ctx = rest_context
-    };
-    httpd_register_uri_handler(server, &light_brightness_post_uri);
 
     /* URI handler for getting web server files */
     httpd_uri_t common_get_uri = {

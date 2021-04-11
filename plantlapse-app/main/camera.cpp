@@ -52,14 +52,15 @@ esp_err_t camera_init(){
 }
 
 // esp_err_t camera_capture(size_t (*saveToSd)(const void*, size_t, size_t, FILE *), FILE * f){
-esp_err_t camera_capture(){
+esp_err_t camera_capture(char * filename){
     //acquire a frame
     camera_fb_t * fb = esp_camera_fb_get();
     if (!fb) {
         ESP_LOGE(TAG, "Camera Capture Failed");
         return ESP_FAIL;
     }
-    FILE* f = fopen("/sdcard/now.jpg", "wb");
+    ESP_LOGI(TAG, "Filename %s", filename);
+    FILE* f = fopen(filename, "wb");
     if (f == NULL) {
         ESP_LOGE(TAG, "Failed to open file for writing");
         return ESP_FAIL;

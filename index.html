@@ -146,7 +146,7 @@ function getFileList() {
 	  }
 	};
 	//xmlhttp.open("GET", "getfilelist", true);
-	xmlhttp.open("GET", "http://lightsense.local/getfilelist", true);
+	xmlhttp.open("GET", "http://plantcam.lan/getfilelist", true);
 	xmlhttp.send();
 }
 
@@ -172,19 +172,20 @@ function sendAllData(endpoint, tagname) {
       j += "\"" + elements[i].id + "\":" + elements[i].value + ",";
     }
   }
+  j = j.substring(0,j.length - 1);
   j += "}";
 	var xmlhttp = new XMLHttpRequest();
-	xmlhttp.open("POST", "http://plantcam.local/" + endpoint, true);
+	xmlhttp.open("POST", "http://plantcam.lan/" + endpoint, true);
 
 	xmlhttp.send(j);
 }
 
 function sendData(endpoint, tagname, data) {
 	var xmlhttp = new XMLHttpRequest();
-	xmlhttp.open("POST", "http://plantcam.local/" + endpoint, true);
+	xmlhttp.open("GET", "http://plantcam.lan/" + endpoint, true);
 	//xmlhttp.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-	var j = "{\"" + tagname + "\":\"" + data + "\"}";
-	xmlhttp.send(j);
+	//var j = "{\"" + tagname + "\":\"" + data + "\"}";
+	xmlhttp.send();
 }
 
 
@@ -262,7 +263,10 @@ window.addEventListener('DOMContentLoaded', onLoad);
 <h1 id="header">Plantcam</h1>
 
 <br />
-<form id="set_form" method="post" action="http://plantcam.local/set">
+<table>
+  <tr>
+    <td>
+<form id="set_form" method="post" action="http://plantcam.lan/set">
     <label for="timelapse_enabled">timelapse_enabled: </label>
     <input type="text" id="timelapse_enabled" value="0" />
     <br />
@@ -320,8 +324,18 @@ window.addEventListener('DOMContentLoaded', onLoad);
     <label for="whitepixelcorrection">whitepixelcorrection: </label>
     <input type="text" id="whitepixelcorrection" value="0" />
     <br />
-    <a href="javascript:{}" onclick="sendAllData('set', 'set_form');">Set</a>
+    <a href="javascript:{}" onclick="sendAllData('api/set/settings', 'set_form');">Set</a>
 </form>
+    </td>
+    <td>
+      <a href="javascript:{}" onclick="sendData('api/set/ota/start', 'ota_start', '1');">Start OTA</a>
+      <br />
+      <a href="javascript:{}" onclick="sendData('api/set/reset/start', 'reset', '1');">Reset</a>
+      <br />
+      <a href="javascript:{}" onclick="sendData('api/set/snap/start', 'snap', '1');">Snap</a>
+    </td>
+    </tr>
+    </table>
 </div>
 <br />
 <br />

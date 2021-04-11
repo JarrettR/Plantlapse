@@ -45,6 +45,8 @@ ESP HTTPS OTA: Allow HTTP for OTA
 
 ESP32-specific: Support for external, SPI-connected RAM
 
+Long filename support: Long filename buffer in heap
+
 
 
 Pointing your browser to http://plantcam.local will open up a settings page.

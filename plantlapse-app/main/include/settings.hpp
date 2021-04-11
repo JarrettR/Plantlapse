@@ -21,7 +21,7 @@ public:
   time_t next_time;
   //In ms
   time_t interval;
-  uint32_t current_set;
+  uint8_t current_set;
   uint32_t current_photo;
 
   uint8_t resolution;

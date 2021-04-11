@@ -39,6 +39,8 @@ extern const uint8_t server_cert_pem_end[] asm("_binary_ca_cert_pem_end");
 
 Settings plSettings;
 
+volatile time_t epochDiff = 0;
+
 #define OTA_URL_SIZE 256 
 
 
@@ -52,8 +54,6 @@ Settings plSettings;
 extern "C" {
 	void app_main(void);
 }
-
-esp_err_t start_rest_server(const char *base_path);
 
 esp_err_t _http_event_handler(esp_http_client_event_t *evt)
 {
@@ -187,8 +187,6 @@ void sd_init()
     fprintf(f, "Hello %s!\n", card->cid.name);
     fclose(f);
     ESP_LOGI(TAG, "File written");
-
-
 }
 
 static void initialise_mdns(void)
@@ -208,21 +206,47 @@ static void initialise_mdns(void)
 void snap_task(void *pvParameter)
 {
     while(1) {
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
         if(plSettings.snap == true) {
             ESP_LOGI(TAG, "Click!");
-
-            //FILE* f = fopen(MOUNT_POINT"/now.jpg", "wb");
-            // if (f == NULL) {
-            //     ESP_LOGE(TAG, "Failed to open file for writing");
-            //     break;
-            // }
-            //fwrite((char *)buf,1,strlen(buf),f);
-            // camera_capture(fwrite, f);
-            camera_capture();
+            char filename[] = MOUNT_POINT"/now.jpg";
+            camera_capture(filename);
             plSettings.snap = false;
         }
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
+}
+
+void lapse_task(void *pvParameter)
+{
+  while(1) {
+    while(plSettings.ota_start == true) {
+      vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
+    if(plSettings.timelapse_enabled == true) {
+      time_t current_time = (esp_timer_get_time() / 1000000) + epochDiff;
+      char filename[60];
+      sprintf(filename, MOUNT_POINT"/%03d", plSettings.current_set);
+      mkdir(filename, 755);
+      sprintf(filename, MOUNT_POINT"/%03d/%06d.jpg", plSettings.current_set, plSettings.current_photo);
+      if (current_time >= plSettings.next_time) {
+        ESP_LOGI(TAG, "Click!");
+        ESP_LOGI(TAG, "T: %i, %s", (int)current_time, filename);
+        //config_camera(&plSettings);
+        camera_capture(filename);
+        plSettings.current_photo++;
+        plSettings.next_time = current_time + (plSettings.interval / 1000);
+        ESP_LOGI(TAG, "%i", (int)plSettings.next_time);
+      }
+      time_t elapsed = ((esp_timer_get_time() / 1000000) + epochDiff) - current_time;
+      if (elapsed > plSettings.interval) {
+        elapsed = plSettings.interval;
+      }
+
+      vTaskDelay((plSettings.interval - elapsed) / portTICK_PERIOD_MS);
+    } else {
+      vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
+  }
 }
 
 void app_main(void)
@@ -232,10 +256,6 @@ void app_main(void)
     // Initialize NVS.
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        // 1.OTA app partition table has a smaller NVS partition size than the non-OTA
-        // partition table. This size mismatch may cause NVS initialization to fail.
-        // 2.NVS partition contains data in new format and cannot be recognized by this version of code.
-        // If this happens, we erase NVS partition and initialize NVS again.
         ESP_ERROR_CHECK(nvs_flash_erase());
         err = nvs_flash_init();
     }
@@ -250,7 +270,6 @@ void app_main(void)
     ESP_ERROR_CHECK(example_connect());
     esp_wifi_set_ps(WIFI_PS_NONE);
 
-    //ESP_ERROR_CHECK(init_fs());
     ESP_ERROR_CHECK(web_init(CONFIG_WEB_MOUNT_POINT, &plSettings));
     
     sd_init();
@@ -258,4 +277,5 @@ void app_main(void)
 
     xTaskCreate(&ota_task, "ota_task", 8192, NULL, 5, NULL);
     xTaskCreate(&snap_task, "snap_task", 8192, NULL, 5, NULL);
+    xTaskCreate(&lapse_task, "lapse_task", 8192, NULL, 5, NULL);
 }
