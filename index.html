@@ -146,7 +146,7 @@ function getFileList() {
 	  }
 	};
 	//xmlhttp.open("GET", "getfilelist", true);
-	xmlhttp.open("GET", "http://plantcam.lan/getfilelist", true);
+	xmlhttp.open("GET", "/getfilelist", true);
 	xmlhttp.send();
 }
 
@@ -175,14 +175,14 @@ function sendAllData(endpoint, tagname) {
   j = j.substring(0,j.length - 1);
   j += "}";
 	var xmlhttp = new XMLHttpRequest();
-	xmlhttp.open("POST", "http://plantcam.lan/" + endpoint, true);
+	xmlhttp.open("POST", "/" + endpoint, true);
 
 	xmlhttp.send(j);
 }
 
 function sendData(endpoint, tagname, data) {
 	var xmlhttp = new XMLHttpRequest();
-	xmlhttp.open("GET", "http://plantcam.lan/" + endpoint, true);
+	xmlhttp.open("GET", "/" + endpoint, true);
 	//xmlhttp.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
 	//var j = "{\"" + tagname + "\":\"" + data + "\"}";
 	xmlhttp.send();
@@ -266,7 +266,7 @@ window.addEventListener('DOMContentLoaded', onLoad);
 <table>
   <tr>
     <td>
-<form id="set_form" method="post" action="http://plantcam.lan/set">
+<form id="set_form" method="post" action="/set">
     <label for="timelapse_enabled">timelapse_enabled: </label>
     <input type="text" id="timelapse_enabled" value="0" />
     <br />
