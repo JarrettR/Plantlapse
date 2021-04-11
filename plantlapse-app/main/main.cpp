@@ -209,6 +209,7 @@ void snap_task(void *pvParameter)
         if(plSettings.snap == true) {
             ESP_LOGI(TAG, "Click!");
             char filename[] = MOUNT_POINT"/now.jpg";
+            config_camera(&plSettings);
             camera_capture(filename);
             plSettings.snap = false;
         }
@@ -231,7 +232,7 @@ void lapse_task(void *pvParameter)
       if (current_time >= plSettings.next_time) {
         ESP_LOGI(TAG, "Click!");
         ESP_LOGI(TAG, "T: %i, %s", (int)current_time, filename);
-        //config_camera(&plSettings);
+        config_camera(&plSettings);
         camera_capture(filename);
         plSettings.current_photo++;
         plSettings.next_time = current_time + (plSettings.interval / 1000);

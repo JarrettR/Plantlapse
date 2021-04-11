@@ -51,7 +51,67 @@ esp_err_t camera_init(){
     return ESP_OK;
 }
 
-// esp_err_t camera_capture(size_t (*saveToSd)(const void*, size_t, size_t, FILE *), FILE * f){
+esp_err_t config_camera(Settings *settings_in) {
+    camera_config.jpeg_quality = settings_in->quality;
+
+    sensor_t *s = esp_camera_sensor_get();
+    // s->set_ae_level(s,settings_in->quality);
+    // s->set_aec2(s,st.aec2);
+    s->set_aec_value(s,settings_in->exposure);
+    s->set_agc_gain(s,settings_in->gain);
+    // s->set_awb_gain(s,st.awb_gain);
+    s->set_bpc(s,settings_in->blackpixelcorrection);
+    s->set_brightness(s,settings_in->brightness);
+    // s->set_colorbar(s,st.colorbar);
+    s->set_contrast(s,settings_in->contrast);
+    // s->set_dcw(s,st.dcw);
+    // s->set_denoise(s,st.denoise);
+    s->set_exposure_ctrl(s,settings_in->autoexposure);
+    // s->set_framesize(s,st.framesize);
+    s->set_gain_ctrl(s,settings_in->autogain);    
+    
+    gainceiling_t ceil;
+    switch (settings_in->gainceiling) {
+        case 2:
+        ceil = GAINCEILING_2X;
+        break;
+        case 4:
+        ceil = GAINCEILING_4X;
+        break;
+        case 8:
+        ceil = GAINCEILING_8X;
+        break;
+        case 16:
+        ceil = GAINCEILING_16X;
+        break;
+        case 32:
+        ceil = GAINCEILING_32X;
+        break;
+        case 64:
+        ceil = GAINCEILING_64X;
+        break;
+        case 128:
+        ceil = GAINCEILING_128X;
+        break;
+        default:
+        return false;
+    }      
+    s->set_gainceiling(s,ceil);
+    s->set_hmirror(s,settings_in->horizontalflip);
+    s->set_lenc(s,settings_in->lenscorrection);
+    s->set_quality(s,settings_in->quality);
+    // s->set_raw_gma(s,st.raw_gma);
+    s->set_saturation(s,settings_in->saturation);
+    s->set_sharpness(s,settings_in->sharpness);
+    // s->set_special_effect(s,st.special_effect);
+    s->set_vflip(s,settings_in->verticalflip);
+    // s->set_wb_mode(s,st.wb_mode);
+    // s->set_whitebal(s,st.awb);
+    s->set_wpc(s,settings_in->whitepixelcorrection);
+
+    return ESP_OK;
+}
+
 esp_err_t camera_capture(char * filename){
     //acquire a frame
     camera_fb_t * fb = esp_camera_fb_get();
