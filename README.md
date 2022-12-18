@@ -27,7 +27,8 @@ Here are some features:
 
 Tested only using the ESP-IDF V4.2:
 
-* Clone and then `make menuconfig` to set up your particular parameters:
+* Clone: `git clone https://github.com/JarrettR/Plantlapse && cd Plantlapse && git submodule update --init --recursive`
+* Use the VSCode plugin or cd into `plantlapse-app/` and then `make menuconfig` to set up your particular parameters:
 * Set OTA Configuration: `http://192.168.1.112:8070/plantlapse-app/build/plantlapse.bin` or similar, to the IP to your development PC where firmware updates will be built/hosted.
 * Example Connection Configuration: Your wifi AP credentials
 * Compile and flash to your ESP32-Cam

@@ -103,6 +103,15 @@ static esp_err_t rest_common_get_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+/* Handler for getting web index */
+esp_err_t index_handler(httpd_req_t *req)
+{
+    httpd_resp_set_type(req, "text/html");
+    httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
+    ESP_LOGI(REST_TAG, "Index");
+    httpd_resp_send(req, index_html_gz, sizeof_index_html_gz);
+    return ESP_OK;
+}
 
 /* Simple handler for getting system handler */
 static esp_err_t system_info_get_handler(httpd_req_t *req)
@@ -333,6 +342,14 @@ esp_err_t start_rest_server(const char *base_path)
         .user_ctx = rest_context
     };
     httpd_register_uri_handler(server, &reset_set_uri);
+    
+    httpd_uri_t index_get_uri = {
+        .uri = "/index.html",
+        .method = HTTP_GET,
+        .handler = index_handler,
+        .user_ctx = rest_context
+    };
+    httpd_register_uri_handler(server, &index_get_uri);
 
     /* URI handler for getting web server files */
     httpd_uri_t common_get_uri = {
@@ -342,6 +359,7 @@ esp_err_t start_rest_server(const char *base_path)
         .user_ctx = rest_context
     };
     httpd_register_uri_handler(server, &common_get_uri);
+
 
     return ESP_OK;
 

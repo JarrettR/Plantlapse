@@ -3,7 +3,9 @@
 
 #include "esp_system.h"
 #include "esp_log.h"
+#include "include/index.hpp"
 #include "include/settings.hpp"
+
 
 
 esp_err_t web_init(const char *base_path, Settings *settings_in);
