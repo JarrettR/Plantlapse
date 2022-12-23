@@ -23,9 +23,11 @@ class Format:
         c = "";
         # c += "#include \"include/index.hpp\"\n\n\n";
         # c += "extern \"C\" {  \n"
-        c += "const char index_html_gz[] = {  \n"
+        # c += "const char index_html_gz[] = {  \n"
+        c += "constexpr char index_html_gz[] = {  \n"
         c += ", ".join(body)
-        c += "\n};\nconst int sizeof_index_html_gz = sizeof(index_html_gz);\n"
+        # c += "\n};\nconst int sizeof_index_html_gz = sizeof(index_html_gz);\n"
+        c += "\n};\nconstexpr int sizeof_index_html_gz = sizeof(index_html_gz);\n"
         # c += "} \n"
         
         return c

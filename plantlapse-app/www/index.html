@@ -2,6 +2,20 @@
 <html dir="ltr" lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <script>
+  var getJSON = function(url, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.responseType = 'json';
+    xhr.onload = function() {
+      var status = xhr.status;
+      if (status === 200) {
+        callback(null, xhr.response);
+      } else {
+        callback(status, xhr.response);
+      }
+    };
+    xhr.send();
+};
 function addRow(name, url, isdir, size, size_string, date_modified, date_modified_string) {
   if (name == "." || name == "..")
     return;
@@ -131,21 +145,41 @@ function onLoad() {
   addHandlers(document.getElementById('nameColumnHeader'), 0);
   addHandlers(document.getElementById('sizeColumnHeader'), 1);
   addHandlers(document.getElementById('dateColumnHeader'), 2);
+
+  var request = new XMLHttpRequest();
+  request.open('GET', '/api/get/settings', true);
+
+  request.onload = function() {
+    if (request.status >= 200 && request.status < 400) {
+      // Success!
+      var data = JSON.parse(request.responseText);
+  		for (k in data) {
+  		  if(document.getElementById(k)) {
+          document.getElementById(k).value = data[k];
+        }
+      }
+    } else {
+      // We reached our target server, but it returned an error
+
+    }
+  };
+
+
+  request.send();
 }
 
 function getFileList() {
-	var xmlhttp = new XMLHttpRequest();
-	xmlhttp.onreadystatechange = function() {
+	var request = new XMLHttpRequest();
+	request.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
-  		var myObj = JSON.parse(this.responseText);
-  		for (k in myObj) {
-  			addRow('File: ' + myObj[k],myObj[k],0,2751,"1 kB",1603487660,"10/23/20, 2:14:20 PM");
+  		var data = JSON.parse(this.responseText);
+  		for (k in data) {
+  			addRow('File: ' + data[k],data[k],0,2751,"1 kB",1603487660,"10/23/20, 2:14:20 PM");
   		}
 	  }
 	};
-	//xmlhttp.open("GET", "getfilelist", true);
-	xmlhttp.open("GET", "/getfilelist", true);
-	xmlhttp.send();
+	request.open("GET", "/api/get/filelist", true);
+	request.send();
 }
 
 function sleep(milliseconds) {

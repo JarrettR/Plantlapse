@@ -165,6 +165,23 @@ static esp_err_t settings_get_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+/* Handler for returning last few filenames */
+static esp_err_t filelist_get_handler(httpd_req_t *req)
+{
+    httpd_resp_set_type(req, "application/json");
+    cJSON *root = cJSON_CreateObject();
+
+    cJSON *name = NULL;
+    name = cJSON_CreateString("000001.jpg");
+    cJSON_AddItemToObject(root, "filename", name);
+
+    const char *sys_info = cJSON_Print(root);
+    httpd_resp_sendstr(req, sys_info);
+    free((void *)sys_info);
+    cJSON_Delete(root);
+    return ESP_OK;
+}
+
 /* Simple handler for setting configuration variables */
 static esp_err_t settings_post_handler(httpd_req_t *req)
 {
@@ -306,6 +323,15 @@ esp_err_t start_rest_server(const char *base_path)
         .user_ctx = rest_context
     };
     httpd_register_uri_handler(server, &settings_get_uri);
+
+    /* URI handler for displaying filenames */
+    httpd_uri_t filelist_get_uri = {
+        .uri = "/api/get/filelist",
+        .method = HTTP_GET,
+        .handler = filelist_get_handler,
+        .user_ctx = rest_context
+    };
+    httpd_register_uri_handler(server, &filelist_get_uri);
 
     /* URI handler for setting configuration variables */
     httpd_uri_t settings_post_uri = {
