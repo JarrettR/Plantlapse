@@ -300,6 +300,7 @@ esp_err_t start_rest_server(const char *base_path)
 
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    config.max_uri_handlers = 10;
     config.uri_match_fn = httpd_uri_match_wildcard;
 
     ESP_LOGI(REST_TAG, "Starting HTTP Server");
